@@ -6,6 +6,8 @@
 
 #include <limits>
 
+#include <ApproximationLib/VolumeApproximator.h>
+
 DisplayWidget::DisplayWidget() : DisplayWidget{nullptr} {}
 
 DisplayWidget::DisplayWidget(QWidget *parent)
@@ -19,8 +21,16 @@ DisplayWidget::DisplayWidget(QWidget *parent)
 }
 
 void DisplayWidget::onStartButtonClick() {
-  qDebug() << "Hello start world!\n"
-           << "Current value = " << m_ui->samplesCountInput->value();
+  const Qt3DCore::QGeometryView *const geometry =
+      m_ui->sceneContainer->getGeometry();
+
+  if (geometry != nullptr) {
+    VolumeApproximator volumeApproximator{*geometry};
+    const std::vector<ApproximationPoint> points =
+        volumeApproximator.getVolume(m_ui->samplesCountInput->value());
+  } else {
+    qDebug() << "Can't approximate volume of nullptr geometry...";
+  }
 }
 
 DisplayWidget::~DisplayWidget() = default;

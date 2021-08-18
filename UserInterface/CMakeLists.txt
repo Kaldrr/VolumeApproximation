@@ -1,7 +1,4 @@
-#find_package(QT NAMES Qt6 COMPONENTS Core Widgets  REQUIRED)
 find_package(Qt6 COMPONENTS Core Widgets 3DExtras Concurrent REQUIRED)
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
