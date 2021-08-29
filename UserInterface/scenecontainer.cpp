@@ -6,8 +6,6 @@
 #include <Qt3DCore/QEntity>
 #include <Qt3DCore/QTransform>
 
-#include <Qt3DInput/QInputAspect>
-
 #include <Qt3DExtras/QAbstractCameraController>
 #include <Qt3DExtras/QForwardRenderer>
 #include <Qt3DExtras/QOrbitCameraController>
@@ -19,6 +17,14 @@
 #include <Qt3DRender/QGeometryRenderer>
 #include <Qt3DRender/QMaterial>
 #include <Qt3DRender/QRenderAspect>
+
+#include <QTimer>
+
+#include <cassert>
+#include <chrono>
+#include <numbers>
+
+using namespace std::chrono_literals;
 
 SceneContainer::SceneContainer() : SceneContainer{nullptr} {};
 
@@ -33,7 +39,7 @@ SceneContainer::SceneContainer(QWidget *parent)
 
   Qt3DRender::QCamera *const camera = m_3dWindow.camera();
   camera->lens()->setPerspectiveProjection(45.0f, 16.0f / 9.0f, 0.1f, 1000.0f);
-  camera->setPosition(QVector3D(40.f, 40.f, 40.0f));
+  camera->setPosition(QVector3D(5.f, 0.f, 0.0f));
   camera->setViewCenter(QVector3D(0, 0, 0));
   camera->setUpVector({0, 1, 0});
 
@@ -41,7 +47,9 @@ SceneContainer::SceneContainer(QWidget *parent)
   m_cameraController->setLookSpeed(180.0f);
   m_cameraController->setCamera(camera);
 
-  m_sphereMesh.setRadius(0.2f);
+  m_sphereMesh.setRings(2);
+  m_sphereMesh.setSlices(3);
+  m_sphereMesh.setRadius(1.f);
   m_sphereMesh.setGenerateTangents(true);
 
   auto material = std::make_unique<Qt3DExtras::QPhongMaterial>();
@@ -50,19 +58,21 @@ SceneContainer::SceneContainer(QWidget *parent)
 
   m_3dWindow.setRootEntity(m_rootEntity.get());
 
-  for (int i = -3; i < 3; ++i) {
-    for (int j = -3; j < 3; ++j) {
-      for (int k = -3; k < 3; ++k) {
-        addSphere({float(i), float(j), float(k)});
-      }
-    }
-  }
-  qDebug() << "Number of spheres: " << m_spheres.size();
+  QTimer *const timer = new QTimer{this};
+  connect(timer, &QTimer::timeout, this, &SceneContainer::updateCamera);
+  timer->setTimerType(Qt::TimerType::CoarseTimer);
+  timer->start(50ms);
+
+  addSphere({0, 0, 0});
+}
+
+const Qt3DCore::QGeometryView *SceneContainer::getGeometryView() const {
+  return m_sphereMesh.view();
 }
 
 void SceneContainer::addSphere(const QVector3D &position) {
-  Qt3DCore::QEntity *const newSphere =
-      m_spheres.emplace_back(new Qt3DCore::QEntity{m_rootEntity.get()});
+  auto newSphere{std::make_unique<Qt3DCore::QEntity>(m_rootEntity.get())};
+  m_spheres.push_back(newSphere.get());
 
   auto *const sphereTransform = new Qt3DCore::QTransform{};
   sphereTransform->setTranslation(position);
@@ -70,6 +80,17 @@ void SceneContainer::addSphere(const QVector3D &position) {
   newSphere->addComponent(&m_sphereMesh);
   newSphere->addComponent(m_sphereMaterial.get());
   newSphere->addComponent(sphereTransform);
+
+  newSphere.release();
+}
+
+void SceneContainer::updateCamera() {
+  const float cameraX = std::sin(m_cameraAngle) * 10;
+  const float cameraY = std::cos(m_cameraAngle) * 10;
+  m_cameraAngle += 1.f / std::numbers::pi_v<float>;
+
+  Qt3DRender::QCamera *const camera = m_3dWindow.camera();
+  camera->setPosition({cameraX, 5.f, cameraY});
 }
 
 SceneContainer::~SceneContainer() = default;

@@ -1,7 +1,4 @@
-#find_package(QT NAMES Qt6 COMPONENTS Core Widgets  REQUIRED)
 find_package(Qt6 COMPONENTS Core Widgets 3DExtras Concurrent REQUIRED)
-
-set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(CMAKE_AUTOUIC ON)
 set(CMAKE_AUTOMOC ON)
@@ -9,16 +6,16 @@ set(CMAKE_AUTORCC ON)
 
 
 set(HEADER_FILES
-    include/UserInterface/mainwindow.h
-    include/UserInterface/displaywidget.h
-    include/UserInterface/scenecontainer.h
+    include/UserInterface/MainWindow.h
+    include/UserInterface/DisplayWidget.h
+    include/UserInterface/SceneContainer.h
 )
 
 set(SOURCE_FILES
     main.cpp
-    mainwindow.cpp mainwindow.ui
-    displaywidget.cpp displaywidget.ui
-    scenecontainer.cpp scenecontainer.ui
+    MainWindow.cpp MainWindow.ui
+    DisplayWidget.cpp DisplayWidget.ui
+    SceneContainer.cpp SceneContainer.ui
 )
 
 add_executable(VolumeApproximation

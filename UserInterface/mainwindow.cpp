@@ -1,6 +1,6 @@
-#include "ui_mainwindow.h"
+#include "ui_MainWindow.h"
 
-#include <UserInterface/mainwindow.h>
+#include <UserInterface/MainWindow.h>
 
 MainWindow::MainWindow() : MainWindow{nullptr} {}
 

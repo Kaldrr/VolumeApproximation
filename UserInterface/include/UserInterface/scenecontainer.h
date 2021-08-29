@@ -31,8 +31,15 @@ public:
   explicit SceneContainer(QWidget *parent);
   ~SceneContainer();
 
-private:
+  const Qt3DCore::QGeometryView *getGeometryView() const;
+
   void addSphere(const QVector3D &position);
+
+public slots:
+  void updatePointsRadius(double radius);
+
+private:
+  void updateCamera();
 
 private:
   std::unique_ptr<Ui::SceneContainer> m_ui;
@@ -42,4 +49,5 @@ private:
   std::unique_ptr<Qt3DExtras::QAbstractCameraController> m_cameraController;
   Qt3DExtras::QSphereMesh m_sphereMesh;
   std::unique_ptr<Qt3DRender::QMaterial> m_sphereMaterial{};
+  float m_cameraAngle{0.f};
 };
