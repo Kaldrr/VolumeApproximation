@@ -6,18 +6,52 @@
 
 #include <algorithm>
 #include <cassert>
+#include <concepts>
 #include <fstream>
 #include <iterator>
+#include <random>
 #include <ranges>
 #include <utility>
 
 VolumeApproximator::VolumeApproximator(const Qt3DCore::QGeometryView &geometry)
-    : m_geometry{&geometry} {}
+    : m_geometryView{&geometry} {}
 
-std::vector<ApproximationPoint>
-VolumeApproximator::getVolume(int /*sampleSize*/) {
-  assert(m_geometry->primitiveType() == Qt3DCore::QGeometryView::Triangles);
-  const Qt3DCore::QGeometry *const geometry = m_geometry->geometry();
+ApproximationResult VolumeApproximator::getVolume(int sampleSize) {
+  const std::vector<Triangle> geometryTriangles = getGeometryTriangles();
+  if (geometryTriangles.empty()) {
+    return {};
+  }
+
+  constexpr float minValue = std::numeric_limits<float>::min();
+  constexpr float maxValue = std::numeric_limits<float>::max();
+
+  QVector3D minExtent{maxValue, maxValue, maxValue};
+  QVector3D maxExtent{minValue, minValue, minValue};
+
+  for (const Triangle &triangle : geometryTriangles) {
+    for (const QVector3D &vertex : triangle) {
+      for (int i = 0; i < 3; ++i) {
+        minExtent[i] = std::min(vertex[i], minExtent[i]);
+        maxExtent[i] = std::max(vertex[i], maxExtent[i]);
+      }
+    }
+  }
+
+  const std::vector<QVector3D> randomPoints =
+      getRandomPoints(sampleSize, minExtent, maxExtent);
+
+  ApproximationResult result{.volume = 0.0};
+
+  for (const QVector3D &point : randomPoints) {
+    result.points.push_back(ApproximationPoint{.m_point = point});
+  }
+
+  return result;
+}
+
+std::vector<Triangle> VolumeApproximator::getGeometryTriangles() const {
+  assert(m_geometryView->primitiveType() == Qt3DCore::QGeometryView::Triangles);
+  const Qt3DCore::QGeometry *const geometry = m_geometryView->geometry();
   assert(geometry);
   const QList<Qt3DCore::QAttribute *> attributes = geometry->attributes();
 
@@ -42,7 +76,9 @@ VolumeApproximator::getVolume(int /*sampleSize*/) {
   }
 
   const std::vector<QVector3D> vertices = getVertices(**vertexAttributeItr);
-  const std::vector<ushort> indexes = getIndexes(**indexAttributeItr);
+  const std::vector<ushort> indexes = getIndices(**indexAttributeItr);
+
+  assert(indexes.size() % 3 == 0);
 
   std::ofstream output{"output.obj"};
   for (const QVector3D &vertex : vertices) {
@@ -55,7 +91,32 @@ VolumeApproximator::getVolume(int /*sampleSize*/) {
            << indexes.at(i + 2) + 1 << '\n';
   }
 
-  return {};
+  std::vector<Triangle> triangles{};
+
+  for (std::size_t i = 0; i < indexes.size(); i += 3) {
+    triangles.push_back({vertices[indexes[i]], vertices[indexes[i + 1]],
+                         vertices[indexes[i + 2]]});
+  }
+
+  return triangles;
+}
+
+std::vector<QVector3D>
+VolumeApproximator::getRandomPoints(int count, const QVector3D &minExtent,
+                                    const QVector3D &maxExtent) const {
+  std::vector<QVector3D> randomPoints{};
+  randomPoints.reserve(count);
+
+  std::mt19937_64 dev{std::random_device{}()};
+  std::uniform_real_distribution<float> rngX{minExtent.x(), maxExtent.x()};
+  std::uniform_real_distribution<float> rngY{minExtent.y(), maxExtent.y()};
+  std::uniform_real_distribution<float> rngZ{minExtent.z(), maxExtent.z()};
+
+  for (int i = 0; i < count; ++i) {
+    randomPoints.emplace_back(rngX(dev), rngY(dev), rngZ(dev));
+  }
+
+  return randomPoints;
 }
 
 std::vector<QVector3D>
@@ -63,7 +124,6 @@ VolumeApproximator::getVertices(const Qt3DCore::QAttribute &vertexAttribute) {
   assert(vertexAttribute.vertexBaseType() == Qt3DCore::QAttribute::Float);
   const QByteArray &verticesData = vertexAttribute.buffer()->data();
   const uint count = vertexAttribute.count();
-  qDebug() << "vertex count: " << count;
   const uint offset = vertexAttribute.byteOffset();
   const uint stride = vertexAttribute.byteStride();
   const char *const ptr = verticesData.constData();
@@ -81,32 +141,31 @@ VolumeApproximator::getVertices(const Qt3DCore::QAttribute &vertexAttribute) {
 }
 
 std::vector<ushort>
-VolumeApproximator::getIndexes(const Qt3DCore::QAttribute &indexAttribute) {
+VolumeApproximator::getIndices(const Qt3DCore::QAttribute &indexAttribute) {
   assert(indexAttribute.vertexBaseType() ==
          Qt3DCore::QAttribute::UnsignedShort);
   const QByteArray &indexesData = indexAttribute.buffer()->data();
   const uint count = indexAttribute.count();
-  qDebug() << "indexCount:" << count;
   const uint offset = indexAttribute.byteOffset();
   const uint stride = indexAttribute.byteStride();
   const char *const ptr = indexesData.constData();
 
-  std::vector<ushort> indexes{};
+  std::vector<ushort> indices{};
   if (stride == 0) {
     for (uint i = 0; i < count; ++i) {
       const char *const indexPtr = ptr + (i * sizeof(ushort)) + offset;
       ushort index;
       std::memcpy(&index, indexPtr, sizeof(index));
-      indexes.push_back(index);
+      indices.push_back(index);
     }
   } else {
     for (uint i = 0; i < count; ++i) {
       const char *const indexPtr = ptr + (i * stride) + offset;
       ushort index;
       std::memcpy(&index, indexPtr, sizeof(index));
-      indexes.push_back(index);
+      indices.push_back(index);
     }
   }
 
-  return indexes;
+  return indices;
 }

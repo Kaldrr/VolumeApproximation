@@ -33,8 +33,12 @@ public:
 
   const Qt3DCore::QGeometryView *getGeometryView() const;
 
-private:
   void addSphere(const QVector3D &position);
+
+public slots:
+  void updatePointsRadius(double radius);
+
+private:
   void updateCamera();
 
 private:
