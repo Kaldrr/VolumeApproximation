@@ -40,7 +40,7 @@ ApproximationResult VolumeApproximator::getVolume(int sampleSize) {
   const std::vector<QVector3D> randomPoints =
       getRandomPoints(sampleSize, minExtent, maxExtent);
 
-  ApproximationResult result{.volume = 0.0};
+  ApproximationResult result{.points={}, .volume = 0.0};
 
   for (const QVector3D &point : randomPoints) {
     result.points.push_back(ApproximationPoint{.m_point = point});

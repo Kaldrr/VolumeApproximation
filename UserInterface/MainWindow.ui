@@ -20,7 +20,7 @@
      <x>0</x>
      <y>0</y>
      <width>800</width>
-     <height>27</height>
+     <height>24</height>
     </rect>
    </property>
   </widget>
@@ -30,7 +30,7 @@
   <customwidget>
    <class>DisplayWidget</class>
    <extends>QWidget</extends>
-   <header>UserInterface/displaywidget.h</header>
+   <header>UserInterface/DisplayWidget.h</header>
    <container>1</container>
   </customwidget>
  </customwidgets>

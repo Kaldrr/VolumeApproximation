@@ -1,15 +1,15 @@
-#include "ui_scenecontainer.h"
+#include "ui_SceneContainer.h"
 
-#include <UserInterface/scenecontainer.h>
+#include <UserInterface/SceneContainer.h>
 
 #include <Qt3DCore/QAspectEngine>
 #include <Qt3DCore/QEntity>
 #include <Qt3DCore/QTransform>
 
 #include <Qt3DExtras/QAbstractCameraController>
+#include <Qt3DExtras/QDiffuseSpecularMaterial>
 #include <Qt3DExtras/QForwardRenderer>
 #include <Qt3DExtras/QOrbitCameraController>
-#include <Qt3DExtras/QPhongMaterial>
 #include <Qt3DExtras/QSphereMesh>
 
 #include <Qt3DRender/QCamera>
@@ -30,7 +30,7 @@ SceneContainer::SceneContainer() : SceneContainer{nullptr} {};
 
 SceneContainer::SceneContainer(QWidget *parent)
     : QWidget{parent}, m_ui{std::make_unique<Ui::SceneContainer>()},
-      m_3dWindow{nullptr /*, Qt3DRender::API::Vulkan*/},
+      m_3dWindow{nullptr, Qt3DRender::API::Vulkan},
       m_rootEntity{std::make_unique<Qt3DCore::QEntity>()},
       m_cameraController{std::make_unique<Qt3DExtras::QOrbitCameraController>(
           m_rootEntity.get())} {
@@ -39,21 +39,25 @@ SceneContainer::SceneContainer(QWidget *parent)
 
   Qt3DRender::QCamera *const camera = m_3dWindow.camera();
   camera->lens()->setPerspectiveProjection(45.0f, 16.0f / 9.0f, 0.1f, 1000.0f);
-  camera->setPosition(QVector3D(5.f, 0.f, 0.0f));
-  camera->setViewCenter(QVector3D(0, 0, 0));
+  camera->setPosition({5.f, 0.f, 0.0f});
+  camera->setViewCenter({0, 0, 0});
   camera->setUpVector({0, 1, 0});
 
   m_cameraController->setLinearSpeed(50.0f);
   m_cameraController->setLookSpeed(180.0f);
   m_cameraController->setCamera(camera);
 
-  m_sphereMesh.setRings(2);
-  m_sphereMesh.setSlices(3);
-  m_sphereMesh.setRadius(1.f);
+  m_sphereMesh.setRings(5);
+  m_sphereMesh.setSlices(5);
   m_sphereMesh.setGenerateTangents(true);
 
-  auto material = std::make_unique<Qt3DExtras::QPhongMaterial>();
-  material->setAmbient(QColor{0, 0, 255});
+  auto material = std::make_unique<Qt3DExtras::QDiffuseSpecularMaterial>();
+  //  material->setAlphaBlendingEnabled(true);
+  material->setDiffuse(QColor{0, 0, 255, 0});
+
+  //  auto material = std::make_unique<Qt3DExtras::QPhongAlphaMaterial>();
+  //  material->setDiffuse(QColor{0, 0, 255, 0});
+
   m_sphereMaterial = std::move(material);
 
   m_3dWindow.setRootEntity(m_rootEntity.get());
@@ -63,7 +67,7 @@ SceneContainer::SceneContainer(QWidget *parent)
   timer->setTimerType(Qt::TimerType::CoarseTimer);
   timer->start(50ms);
 
-  addSphere({0, 0, 0});
+  //  addSphere({0, 0, 0});
 }
 
 const Qt3DCore::QGeometryView *SceneContainer::getGeometryView() const {
@@ -84,6 +88,10 @@ void SceneContainer::addSphere(const QVector3D &position) {
   newSphere.release();
 }
 
+void SceneContainer::updatePointsRadius(double radius) {
+  m_sphereMesh.setRadius(radius);
+}
+
 void SceneContainer::updateCamera() {
   const float cameraX = std::sin(m_cameraAngle) * 10;
   const float cameraY = std::cos(m_cameraAngle) * 10;
@@ -91,6 +99,7 @@ void SceneContainer::updateCamera() {
 
   Qt3DRender::QCamera *const camera = m_3dWindow.camera();
   camera->setPosition({cameraX, 5.f, cameraY});
+  camera->setViewCenter({0, 0, 0});
 }
 
 SceneContainer::~SceneContainer() = default;
