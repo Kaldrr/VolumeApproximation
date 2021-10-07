@@ -2,7 +2,6 @@
 
 #include <Qt3DCore/QAttribute>
 #include <Qt3DCore/QGeometry>
-#include <Qt3DCore/QGeometryView>
 
 #include <algorithm>
 #include <cassert>
@@ -13,8 +12,8 @@
 #include <ranges>
 #include <utility>
 
-VolumeApproximator::VolumeApproximator(const Qt3DCore::QGeometryView &geometry)
-    : m_geometryView{&geometry} {}
+VolumeApproximator::VolumeApproximator(const Qt3DCore::QGeometry &geometry)
+    : m_geometry{&geometry} {}
 
 ApproximationResult VolumeApproximator::getVolume(int sampleSize) {
   const std::vector<Triangle> geometryTriangles = getGeometryTriangles();
@@ -40,7 +39,7 @@ ApproximationResult VolumeApproximator::getVolume(int sampleSize) {
   const std::vector<QVector3D> randomPoints =
       getRandomPoints(sampleSize, minExtent, maxExtent);
 
-  ApproximationResult result{.points={}, .volume = 0.0};
+  ApproximationResult result{.points = {}, .volume = 0.0};
 
   for (const QVector3D &point : randomPoints) {
     result.points.push_back(ApproximationPoint{.m_point = point});
@@ -50,10 +49,10 @@ ApproximationResult VolumeApproximator::getVolume(int sampleSize) {
 }
 
 std::vector<Triangle> VolumeApproximator::getGeometryTriangles() const {
-  assert(m_geometryView->primitiveType() == Qt3DCore::QGeometryView::Triangles);
-  const Qt3DCore::QGeometry *const geometry = m_geometryView->geometry();
-  assert(geometry);
-  const QList<Qt3DCore::QAttribute *> attributes = geometry->attributes();
+  //  assert(m_geometryView->primitiveType() ==
+  //  Qt3DCore::QGeometryView::Triangles);
+  assert(m_geometry);
+  const QList<Qt3DCore::QAttribute *> attributes = m_geometry->attributes();
 
   const QString vertexAttributeName =
       Qt3DCore::QAttribute::defaultPositionAttributeName();
@@ -147,24 +146,17 @@ VolumeApproximator::getIndices(const Qt3DCore::QAttribute &indexAttribute) {
   const QByteArray &indexesData = indexAttribute.buffer()->data();
   const uint count = indexAttribute.count();
   const uint offset = indexAttribute.byteOffset();
-  const uint stride = indexAttribute.byteStride();
+  const uint stride = indexAttribute.byteStride() != 0
+                          ? indexAttribute.byteStride()
+                          : sizeof(ushort);
   const char *const ptr = indexesData.constData();
 
   std::vector<ushort> indices{};
-  if (stride == 0) {
-    for (uint i = 0; i < count; ++i) {
-      const char *const indexPtr = ptr + (i * sizeof(ushort)) + offset;
-      ushort index;
-      std::memcpy(&index, indexPtr, sizeof(index));
-      indices.push_back(index);
-    }
-  } else {
-    for (uint i = 0; i < count; ++i) {
-      const char *const indexPtr = ptr + (i * stride) + offset;
-      ushort index;
-      std::memcpy(&index, indexPtr, sizeof(index));
-      indices.push_back(index);
-    }
+  for (uint i = 0; i < count; ++i) {
+    const char *const indexPtr = ptr + (i * stride) + offset;
+    ushort index;
+    std::memcpy(&index, indexPtr, sizeof(ushort));
+    indices.push_back(index);
   }
 
   return indices;

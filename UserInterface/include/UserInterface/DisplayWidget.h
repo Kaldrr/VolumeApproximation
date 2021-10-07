@@ -18,6 +18,7 @@ public:
 
 private slots:
   void onStartButtonClick();
+  void onLoadMeshButtonClick();
 
 private:
   std::unique_ptr<Ui::DisplayWidget> m_ui;

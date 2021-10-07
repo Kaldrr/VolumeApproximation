@@ -7,7 +7,7 @@
 #include <QtGui/QVector3D>
 
 namespace Qt3DCore {
-class QGeometryView;
+class QGeometry;
 class QAttribute;
 } // namespace Qt3DCore
 
@@ -26,7 +26,7 @@ using Triangle = std::array<QVector3D, 3>;
 
 class QTAPPROXLIB_EXPORT VolumeApproximator {
 public:
-  VolumeApproximator(const Qt3DCore::QGeometryView &geometry);
+  VolumeApproximator(const Qt3DCore::QGeometry &geometry);
 
   ApproximationResult getVolume(int sampleSize);
 
@@ -42,5 +42,5 @@ private:
   getIndices(const Qt3DCore::QAttribute &indexAttribute);
 
 private:
-  const Qt3DCore::QGeometryView *const m_geometryView{};
+  const Qt3DCore::QGeometry *const m_geometry{};
 };

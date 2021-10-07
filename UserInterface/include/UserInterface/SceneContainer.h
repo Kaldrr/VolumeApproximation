@@ -2,6 +2,9 @@
 
 #include <QWidget>
 
+#include <Qt3DRender/QMesh>
+
+#include <Qt3DExtras/QDiffuseSpecularMaterial>
 #include <Qt3DExtras/QSphereMesh>
 #include <Qt3DExtras/Qt3DWindow>
 
@@ -15,10 +18,6 @@ namespace Qt3DCore {
 class QEntity;
 } // namespace Qt3DCore
 
-namespace Qt3DRender {
-class QMaterial;
-} // namespace Qt3DRender
-
 namespace Qt3DExtras {
 class QAbstractCameraController;
 } // namespace Qt3DExtras
@@ -31,23 +30,37 @@ public:
   explicit SceneContainer(QWidget *parent);
   ~SceneContainer();
 
-  const Qt3DCore::QGeometryView *getGeometryView() const;
+  const Qt3DCore::QGeometry *getGeometry() const;
 
   void addSphere(const QVector3D &position);
+  void setMainMeshPath(const QUrl &meshFile);
+  void setCameraDistance(const QVector3D &distance);
 
 public slots:
   void updatePointsRadius(double radius);
 
-private:
+private slots:
+  void onMeshStatusChanged(Qt3DRender::QMesh::Status newStatus);
   void updateCamera();
+
+private:
+  void addMainMesh();
 
 private:
   std::unique_ptr<Ui::SceneContainer> m_ui;
   Qt3DExtras::Qt3DWindow m_3dWindow{};
   std::unique_ptr<Qt3DCore::QEntity> m_rootEntity;
-  std::vector<Qt3DCore::QEntity *> m_spheres;
   std::unique_ptr<Qt3DExtras::QAbstractCameraController> m_cameraController;
-  Qt3DExtras::QSphereMesh m_sphereMesh;
-  std::unique_ptr<Qt3DRender::QMaterial> m_sphereMaterial{};
   float m_cameraAngle{0.f};
+  QVector3D m_cameraDistance{1.f, 1.f, 1.f};
+
+  // Spheres components
+  std::vector<Qt3DCore::QEntity *> m_spheres;
+  Qt3DExtras::QSphereMesh m_sphereMesh;
+  Qt3DExtras::QDiffuseSpecularMaterial m_sphereMaterial{};
+
+  // Main mesh
+  Qt3DRender::QMesh m_mainMesh;
+  Qt3DExtras::QDiffuseSpecularMaterial m_mainMeshMaterial{};
+  bool m_mainMeshAddedToScene{false};
 };
