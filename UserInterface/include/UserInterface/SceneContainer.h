@@ -32,16 +32,15 @@ public:
 
   const Qt3DCore::QGeometry *getGeometry() const;
 
-  void addSphere(const QVector3D &position);
-  void setMainMeshPath(const QUrl &meshFile);
-  void setCameraDistance(const QVector3D &distance);
+  //void addSphere(const QVector3D &position);
 
 public slots:
-  void updatePointsRadius(double radius);
+  //void updatePointsRadius(double radius);
+	void setMainMeshPath(const QUrl& meshFile);
+	void setCameraDistance(QVector3D distance);
 
 private slots:
   void onMeshStatusChanged(Qt3DRender::QMesh::Status newStatus);
-  void updateCamera();
 
 private:
   void addMainMesh();
@@ -55,9 +54,9 @@ private:
   QVector3D m_cameraDistance{1.f, 1.f, 1.f};
 
   // Spheres components
-  std::vector<Qt3DCore::QEntity *> m_spheres;
-  Qt3DExtras::QSphereMesh m_sphereMesh;
-  Qt3DExtras::QDiffuseSpecularMaterial m_sphereMaterial{};
+  //std::vector<Qt3DCore::QEntity *> m_spheres;
+  //Qt3DExtras::QSphereMesh m_sphereMesh;
+  //Qt3DExtras::QDiffuseSpecularMaterial m_sphereMaterial{};
 
   // Main mesh
   Qt3DRender::QMesh m_mainMesh;

@@ -13,63 +13,84 @@
 
 #include <limits>
 
-DisplayWidget::DisplayWidget() : DisplayWidget{nullptr} {}
+#include <fmt/core.h>
 
-DisplayWidget::DisplayWidget(QWidget *parent)
-    : QWidget{parent}, m_ui{std::make_unique<Ui::DisplayWidget>()} {
-  m_ui->setupUi(this);
 
-  m_ui->samplesCountInput->setRange(0, std::numeric_limits<int>::max());
+DisplayWidget::DisplayWidget() : DisplayWidget{ nullptr } {}
 
-  connect(m_ui->startButton, &QPushButton::clicked, this,
-          &DisplayWidget::onStartButtonClick);
-  connect(m_ui->loadMeshButton, &QPushButton::clicked, this,
-          &DisplayWidget::onLoadMeshButtonClick);
-  connect(m_ui->pointRadiusInput, &QDoubleSpinBox::valueChanged,
-          m_ui->sceneContainer, &SceneContainer::updatePointsRadius);
+DisplayWidget::DisplayWidget(QWidget* parent)
+	: QWidget{ parent }
+	, m_ui{ std::make_unique<Ui::DisplayWidget>() }
+{
+	m_ui->setupUi(this);
 
-  m_ui->pointRadiusInput->setValue(0.05);
+	m_ui->samplesCountInput->setRange(0, std::numeric_limits<int>::max());
+
+	connect(m_ui->startButton, &QPushButton::clicked, this,
+		&DisplayWidget::onStartButtonClick);
+	connect(m_ui->loadMeshButton, &QPushButton::clicked, this,
+		&DisplayWidget::onLoadMeshButtonClick);
+	//connect(m_ui->pointRadiusInput, &QDoubleSpinBox::valueChanged,
+	//	m_ui->sceneContainer, &SceneContainer::updatePointsRadius);
+
+	m_ui->pointRadiusInput->setValue(0.05);
 }
 
 void DisplayWidget::onStartButtonClick() {
-  const Qt3DCore::QGeometry *const geometry =
-      m_ui->sceneContainer->getGeometry();
+	const Qt3DCore::QGeometry* const geometry =
+		m_ui->sceneContainer->getGeometry();
 
-  if (geometry == nullptr) {
-    qDebug() << "Can't approximate volume of nullptr geometry...";
-    return;
-  }
+	if (geometry == nullptr) {
+		qDebug() << "Can't approximate volume of nullptr geometry...";
+		return;
+	}
 
-  VolumeApproximator volumeApproximator{*geometry};
-  const ApproximationResult points =
-      volumeApproximator.getVolume(m_ui->samplesCountInput->value());
+	const int sampleCount = m_ui->samplesCountInput->value();
 
-  constexpr float minValue = std::numeric_limits<float>::min();
-  QVector3D maxDistance{minValue, minValue, minValue};
+	if (sampleCount <= 0) {
+		qDebug() << "Need at least 1 point when calculating volume...";
+		return;
+	}
 
-  for (const ApproximationPoint &point : points.points) {
-    maxDistance.setX(std::max(std::abs(point.m_point.x()), maxDistance.x()));
-    maxDistance.setY(std::max(std::abs(point.m_point.y()), maxDistance.y()));
-    maxDistance.setZ(std::max(std::abs(point.m_point.z()), maxDistance.z()));
+	VolumeApproximator volumeApproximator{ *geometry };
+	const ApproximationResult points = volumeApproximator.getVolume(sampleCount);
 
-    m_ui->sceneContainer->addSphere(point.m_point);
-  }
+	// Get volume of cube that contains the entire mesh in cm3
+	const long double cubeVolume =
+		(points.maxExtent.x() - points.minExtent.x()) *
+		(points.maxExtent.y() - points.minExtent.y()) *
+		(points.maxExtent.z() - points.minExtent.z()) * 1'000'000.0;
 
-  m_ui->sceneContainer->setCameraDistance(maxDistance);
+	const std::size_t pointsHit = std::ranges::count_if(points.points,
+		[](const ApproximationPoint& point) {
+			return point.m_status == ApproximationPoint::PointStatus::Inside;
+		}
+	);
+
+	const double finalVolume = cubeVolume * 
+		(static_cast<long double>(pointsHit) / static_cast<long double>(points.points.size()));
+
+	fmt::print("Mesh volume: {} cm3\n", finalVolume);
+
+	//m_ui->sceneContainer->setCameraDistance(maxDistance);
+
+	// TODO: Use VolumeApproxmiation, to make a graph
+	// x-axis: points used to approximate
+	// y-axis: volume from the points
 }
 
 void DisplayWidget::onLoadMeshButtonClick() {
-  const QString homeDirectory = QDir::homePath();
-  QFileDialog fileDialog{this, "Mesh file", homeDirectory};
-  fileDialog.setFileMode(QFileDialog::ExistingFile);
-  fileDialog.setViewMode(QFileDialog::Detail);
-  if (fileDialog.exec()) {
-    const QList<QUrl> selectedFiles = fileDialog.selectedUrls();
-    if (!selectedFiles.empty()) {
-      assert(selectedFiles.size() == 1);
-      m_ui->sceneContainer->setMainMeshPath(selectedFiles.front());
-    }
-  }
+	const QString homeDirectory = QDir::homePath();
+	QFileDialog fileDialog{ this, "Mesh file", homeDirectory };
+	fileDialog.setFileMode(QFileDialog::ExistingFile);
+	fileDialog.setViewMode(QFileDialog::Detail);
+	if (fileDialog.exec()) {
+		const QList<QUrl> selectedFiles = fileDialog.selectedUrls();
+		if (!selectedFiles.empty()) {
+			assert(selectedFiles.size() == 1);
+			emit m_ui->sceneContainer->setMainMeshPath(selectedFiles.front());
+		}
+	}
 }
 
 DisplayWidget::~DisplayWidget() = default;
