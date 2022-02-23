@@ -1,0 +1,28 @@
+﻿{
+  "configurations": [
+    {
+      "name": "x64-Debug",
+      "generator": "Ninja",
+      "configurationType": "Debug",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DCMAKE_PREFIX_PATH=E:\\Qt\\6.2.2\\msvc2019_64 -GNinja -DCMAKE_PROJECT_INCLUDE_BEFORE:PATH=E:/Qt/Tools/QtCreator/share/qtcreator/package-manager/auto-setup.cmake -DQT_QMAKE_EXECUTABLE:STRING=E:/Qt/6.2.2/msvc2019_64/bin/qmake.exe",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "cmakeToolchain": "E:\\git\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
+    },
+    {
+      "name": "x64-Release",
+      "generator": "Ninja",
+      "configurationType": "Release",
+      "buildRoot": "${projectDir}\\out\\build\\${name}",
+      "installRoot": "${projectDir}\\out\\install\\${name}",
+      "cmakeCommandArgs": "-DCMAKE_PREFIX_PATH=E:\\Qt\\6.2.2\\msvc2019_64",
+      "buildCommandArgs": "",
+      "ctestCommandArgs": "",
+      "inheritEnvironments": [ "msvc_x64_x64" ],
+      "cmakeToolchain": "E:\\git\\vcpkg\\scripts\\buildsystems\\vcpkg.cmake"
+    }
+  ]
+}
