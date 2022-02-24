@@ -1,4 +1,4 @@
-#include "ui_DisplayWidget.h"
+#include <ui/ui_DisplayWidget.h>
 
 #include <UserInterface/DisplayWidget.h>
 
@@ -11,9 +11,30 @@
 #include <QFileDialog>
 #include <QStandardPaths>
 
+#include <execution>
 #include <limits>
 
 #include <fmt/core.h>
+
+namespace
+{
+class VolumeApproximationWorker : public QObject
+{
+	Q_OBJECT
+
+signals:
+	void approximationResultReady(const ApproximationResult& approximationResult);
+
+public slots:
+	void doWork(const Qt3DCore::QGeometry* geometry, const int sampleCount)
+	{
+		assert(geometry != nullptr);
+		VolumeApproximator volumeApproximator{*geometry};
+		ApproximationResult points = volumeApproximator.getVolume(sampleCount);
+		emit approximationResultReady(std::move(points));
+	}
+};
+} // namespace
 
 DisplayWidget::DisplayWidget() : DisplayWidget{nullptr}
 {
@@ -33,12 +54,21 @@ DisplayWidget::DisplayWidget(QWidget* parent)
 	//	m_ui->sceneContainer, &SceneContainer::updatePointsRadius);
 
 	m_ui->pointRadiusInput->setValue(0.05);
+
+	// Move worker to a sperate thread, so we don't block main ui-thread
+	auto* const worker = new VolumeApproximationWorker{};
+	worker->moveToThread(&m_workerThread);
+	connect(&m_workerThread, &QThread::finished, worker, &QObject::deleteLater);
+	connect(this, &DisplayWidget::volumeApproximationRequested, worker,
+	    &VolumeApproximationWorker::doWork);
+	connect(worker, &VolumeApproximationWorker::approximationResultReady, this,
+	    &DisplayWidget::volumeApproximationDone);
+	m_workerThread.start();
 }
 
 void DisplayWidget::onStartButtonClick()
 {
 	const Qt3DCore::QGeometry* const geometry = m_ui->sceneContainer->getGeometry();
-
 	if (geometry == nullptr)
 	{
 		qDebug() << "Can't approximate volume of nullptr geometry...";
@@ -46,36 +76,13 @@ void DisplayWidget::onStartButtonClick()
 	}
 
 	const int sampleCount = m_ui->samplesCountInput->value();
-
 	if (sampleCount <= 0)
 	{
 		qDebug() << "Need at least 1 point when calculating volume...";
 		return;
 	}
 
-	VolumeApproximator volumeApproximator{*geometry};
-	const ApproximationResult points = volumeApproximator.getVolume(sampleCount);
-
-	// Get volume of cube that contains the entire mesh in cm3
-	const long double cubeVolume = (points.maxExtent.x() - points.minExtent.x()) *
-	                               (points.maxExtent.y() - points.minExtent.y()) *
-	                               (points.maxExtent.z() - points.minExtent.z()) * 1'000'000.0;
-
-	const std::size_t pointsHit =
-	    std::ranges::count_if(points.points, [](const ApproximationPoint& point) {
-		    return point.m_status == ApproximationPoint::PointStatus::Inside;
-	    });
-
-	const double finalVolume = cubeVolume * (static_cast<long double>(pointsHit) /
-	                                            static_cast<long double>(points.points.size()));
-
-	fmt::print("Mesh volume: {} cm3\n", finalVolume);
-
-	// m_ui->sceneContainer->setCameraDistance(maxDistance);
-
-	// TODO: Use VolumeApproxmiation, to make a graph
-	// x-axis: points used to approximate
-	// y-axis: volume from the points
+	emit volumeApproximationRequested(geometry, sampleCount);
 }
 
 void DisplayWidget::onLoadMeshButtonClick()
@@ -90,9 +97,40 @@ void DisplayWidget::onLoadMeshButtonClick()
 		if (!selectedFiles.empty())
 		{
 			assert(selectedFiles.size() == 1);
-			m_ui->sceneContainer->OnMainMeshPath(selectedFiles.front());
+			m_ui->sceneContainer->setMainMeshPath(selectedFiles.front());
 		}
 	}
 }
 
-DisplayWidget::~DisplayWidget() = default;
+void DisplayWidget::volumeApproximationDone(const ApproximationResult& points)
+{
+	// Get volume of cube that contains the entire mesh in cm3
+	const long double cubeVolume = (points.m_maxExtent.x() - points.m_minExtent.x()) *
+	                               (points.m_maxExtent.y() - points.m_minExtent.y()) *
+	                               (points.m_maxExtent.z() - points.m_minExtent.z()) * 1'000'000.0;
+
+	const std::size_t pointsHit = std::count_if(std::execution::par_unseq, begin(points.m_points),
+	    end(points.m_points), [](const ApproximationPoint& point) {
+		    return point.m_status == ApproximationPoint::PointStatus::Inside;
+	    });
+
+	const double finalVolume = cubeVolume * (static_cast<long double>(pointsHit) /
+	                                            static_cast<long double>(points.m_points.size()));
+
+	fmt::print("Mesh volume: {} cm3\n", finalVolume);
+
+	// m_ui->sceneContainer->setCameraDistance(maxDistance);
+
+	// TODO: Use VolumeApproxmiation, to make a graph
+	// x-axis: points used to approximate
+	// y-axis: volume from the points
+}
+
+DisplayWidget::~DisplayWidget()
+{
+	m_workerThread.quit();
+	m_workerThread.wait();
+}
+
+
+#include "DisplayWidget.moc"

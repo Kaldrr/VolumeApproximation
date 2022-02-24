@@ -23,13 +23,14 @@ struct QTAPPROXLIB_EXPORT ApproximationPoint
 	PointStatus m_status{PointStatus::Outside};
 };
 
-struct QTAPPROXLIB_EXPORT ApproximationResult
+class QTAPPROXLIB_EXPORT ApproximationResult
 {
-	std::vector<ApproximationPoint> points;
-	double volume{0.0};
+public:
+	std::vector<ApproximationPoint> m_points;
+	double m_volume{0.0};
 
-	QVector3D minExtent;
-	QVector3D maxExtent;
+	QVector3D m_minExtent;
+	QVector3D m_maxExtent;
 };
 
 using Triangle = std::array<QVector3D, 3>;
@@ -42,14 +43,14 @@ public:
 	ApproximationResult getVolume(int sampleSize);
 
 private:
-	ApproximationPoint computePoint(QVector3D origin,
-	    QVector3D pointPosition,
+	ApproximationPoint computePoint(const QVector3D& origin,
+	    const QVector3D& pointPosition,
 	    const std::vector<Triangle>& meshTriangles) const;
 
 	std::vector<Triangle> getGeometryTriangles() const;
-	std::vector<QVector3D> getRandomPoints(int count,
-	    QVector3D minExtent,
-	    QVector3D maxExtent) const;
+	std::vector<QVector3D> generateRandomPoints(int count,
+	    const QVector3D& minExtent,
+	    const QVector3D& maxExtent) const;
 
 	static std::vector<QVector3D> getVertices(const Qt3DCore::QAttribute& vertexAttribute);
 	static std::vector<ushort> getIndices(const Qt3DCore::QAttribute& indexAttribute);

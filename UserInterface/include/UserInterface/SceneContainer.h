@@ -40,8 +40,8 @@ public:
 
 public slots:
 	// void updatePointsRadius(double radius);
-	void OnMainMeshPath(const QUrl& meshFile);
-	void OnCameraDistance(QVector3D distance);
+	void setMainMeshPath(const QUrl& meshFile);
+	void setCameraDistance(const QVector3D& distance);
 
 private slots:
 	void onMeshStatusChanged(Qt3DRender::QMesh::Status newStatus);

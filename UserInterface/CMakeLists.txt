@@ -13,9 +13,9 @@ set(HEADER_FILES
 
 set(SOURCE_FILES
     main.cpp
-    MainWindow.cpp MainWindow.ui
-    DisplayWidget.cpp DisplayWidget.ui
-    SceneContainer.cpp SceneContainer.ui
+    MainWindow.cpp ui/MainWindow.ui
+    DisplayWidget.cpp ui/DisplayWidget.ui
+    SceneContainer.cpp ui/SceneContainer.ui
 )
 
 

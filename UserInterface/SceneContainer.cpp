@@ -1,4 +1,4 @@
-#include "ui_SceneContainer.h"
+#include <ui/ui_SceneContainer.h>
 
 #include <UserInterface/SceneContainer.h>
 
@@ -30,7 +30,7 @@ using namespace std::chrono_literals;
 
 SceneContainer::SceneContainer() : SceneContainer{nullptr} {};
 
-SceneContainer::SceneContainer(QWidget* parent)
+SceneContainer::SceneContainer(QWidget* const parent)
     : QWidget{parent}
     , m_ui{std::make_unique<Ui::SceneContainer>()}
     , m_3dWindow{nullptr, Qt3DRender::API::Vulkan}
@@ -84,7 +84,7 @@ const Qt3DCore::QGeometry* SceneContainer::getGeometry() const
 //	newSphere->addComponent(sphereTransform);
 // }
 
-void SceneContainer::OnMainMeshPath(const QUrl& meshFile)
+void SceneContainer::setMainMeshPath(const QUrl& meshFile)
 {
 	m_mainMesh.setSource(meshFile);
 	if (m_mainMeshAddedToScene == false)
@@ -94,7 +94,7 @@ void SceneContainer::OnMainMeshPath(const QUrl& meshFile)
 	}
 }
 
-void SceneContainer::OnCameraDistance(const QVector3D distance)
+void SceneContainer::setCameraDistance(const QVector3D& distance)
 {
 	m_cameraDistance = distance;
 }
