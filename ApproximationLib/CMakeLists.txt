@@ -1,6 +1,5 @@
 find_package(Qt6 COMPONENTS Core Gui 3DCore REQUIRED)
 
-
 set(HEADER_FILES
     include/ApproximationLib/ApproximationLib_global.h
     include/ApproximationLib/VolumeApproximator.h

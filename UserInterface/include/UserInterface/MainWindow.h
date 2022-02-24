@@ -2,18 +2,20 @@
 
 #include <QMainWindow>
 
-namespace Ui {
+namespace Ui
+{
 class MainWindow;
 }
 
-class MainWindow : public QMainWindow {
-  Q_OBJECT
+class MainWindow : public QMainWindow
+{
+	Q_OBJECT
 
 public:
-  MainWindow();
-  explicit MainWindow(QWidget *parent);
-  ~MainWindow();
+	MainWindow();
+	explicit MainWindow(QWidget* parent);
+	~MainWindow();
 
 private:
-  std::unique_ptr<Ui::MainWindow> m_ui;
+	std::unique_ptr<Ui::MainWindow> m_ui;
 };
