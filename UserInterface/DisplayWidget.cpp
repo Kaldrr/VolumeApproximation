@@ -2,7 +2,7 @@
 
 #include <UserInterface/DisplayWidget.h>
 
-#include <ApproximationLib/VolumeApproximator.h>
+#include <ApproximationLib/VolumeApproximationManager.h>
 
 #include <QDebug>
 #include <QDir>
@@ -29,7 +29,7 @@ public slots:
 	void doWork(const Qt3DCore::QGeometry* geometry, const int sampleCount)
 	{
 		assert(geometry != nullptr);
-		VolumeApproximator volumeApproximator{*geometry};
+		VolumeApproximationManager volumeApproximator{*geometry};
 		ApproximationResult points = volumeApproximator.getVolume(sampleCount);
 		emit approximationResultReady(std::move(points));
 	}

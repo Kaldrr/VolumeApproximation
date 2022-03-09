@@ -2,17 +2,22 @@ find_package(Qt6 COMPONENTS Core Gui 3DCore REQUIRED)
 
 set(HEADER_FILES
     include/ApproximationLib/ApproximationLib_global.h
-    include/ApproximationLib/VolumeApproximator.h
-)
+    "include/ApproximationLib/VolumeApproximationManager.h"
+    "include/ApproximationLib/IVolumeApproximationStrategy.h" 
+    "include/ApproximationLib/ICpuVolumeApproximationStrategy.h"
+    "include/ApproximationLib/CudaVolumeApproximationStrategy.h"
+    "include/ApproximationLib/ParallelAlgorithmVolumeApproximationStrategy.h")
 
 set(SOURCE_FILES
-    VolumeApproximator.cpp
+    "VolumeApproximationManager.cpp"
+    "ICpuVolumeApproximationStrategy.cpp"
+    "ParallelAlgorithmVolumeApproximationStrategy.cpp"
+    "ParallelAlgorithmVolumeApproximationStrategy.cpp"
 )
 
 add_library(ApproximationLib SHARED
     ${HEADER_FILES}
-    ${SOURCE_FILES}
-)
+    ${SOURCE_FILES})
 
 target_link_libraries(ApproximationLib PRIVATE Qt6::Core Qt6::Gui Qt6::3DCore)
 target_compile_options(ApproximationLib PRIVATE

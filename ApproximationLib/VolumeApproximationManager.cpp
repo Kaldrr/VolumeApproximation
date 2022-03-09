@@ -1,7 +1,9 @@
-#include <ApproximationLib/VolumeApproximator.h>
+#include <ApproximationLib/ParallelAlgorithmVolumeApproximationStrategy.h>
+#include <ApproximationLib/VolumeApproximationManager.h>
 
 #include <Qt3DCore/QAttribute>
 #include <Qt3DCore/QGeometry>
+#include <Qt3DCore/QGeometryView>
 
 #include <algorithm>
 #include <cassert>
@@ -13,11 +15,14 @@
 #include <ranges>
 #include <utility>
 
-VolumeApproximator::VolumeApproximator(const Qt3DCore::QGeometry& geometry) : m_geometry{&geometry}
+VolumeApproximationManager::VolumeApproximationManager(const Qt3DCore::QGeometry& geometry)
+    : m_Geometry{&geometry}
+    , m_VolumeApproximationStrategy{
+          std::make_unique<ParallelAlgorithmVolumeApproximationStrategy>()}
 {
 }
 
-ApproximationResult VolumeApproximator::getVolume(const int sampleSize)
+ApproximationResult VolumeApproximationManager::getVolume(const int sampleSize)
 {
 	const std::vector<Triangle> geometryTriangles = getGeometryTriangles();
 	if (geometryTriangles.empty())
@@ -46,77 +51,16 @@ ApproximationResult VolumeApproximator::getVolume(const int sampleSize)
 	const std::vector<QVector3D> randomPoints =
 	    generateRandomPoints(sampleSize, minExtent, maxExtent);
 
-	// Substract random value from minExtent, to ensure point we're shooting out ray towards
-	// is outside of the box that contains the entire object
-	const QVector3D outsidePoint = minExtent - QVector3D{1.f, 2.f, 3.f};
-	std::vector<ApproximationPoint> approximationPoints{};
-	approximationPoints.resize(randomPoints.size());
 
-	std::transform(std::execution::par_unseq, begin(randomPoints), end(randomPoints),
-	    begin(approximationPoints), [&](const QVector3D& randomPoint) {
-		    return computePoint(randomPoint, outsidePoint, geometryTriangles);
-	    });
-
-	return ApproximationResult{.m_points = std::move(approximationPoints),
-	    .m_volume = 0.0,
-	    .m_minExtent = minExtent,
-	    .m_maxExtent = maxExtent};
+	return m_VolumeApproximationStrategy->ComputeVolume(geometryTriangles, randomPoints,
+	    minExtent, maxExtent);
 }
 
-ApproximationPoint VolumeApproximator::computePoint(const QVector3D& origin,
-    const QVector3D& pointPosition,
-    const std::vector<Triangle>& meshTriangles) const
+std::vector<Triangle> VolumeApproximationManager::getGeometryTriangles() const
 {
-	constexpr float Epsilon = 0.0000001f;
-
-	const QVector3D rayVector = (origin - pointPosition).normalized();
-	std::size_t trianglesPassed = 0;
-
-	for (const Triangle& triangle : meshTriangles)
-	{
-		const QVector3D edge1 = triangle[1] - triangle[0];
-		const QVector3D edge2 = triangle[2] - triangle[0];
-		const QVector3D h = QVector3D::crossProduct(rayVector, edge2);
-		const float a = QVector3D::dotProduct(edge1, h);
-
-		if (-Epsilon < a && a < Epsilon)
-		{
-			continue;
-		}
-
-		const float f = 1.0f / a;
-		const QVector3D s = origin - triangle[0];
-		const float u = f * QVector3D::dotProduct(s, h);
-		if (u < 0.0f || u > 1.0f)
-		{
-			continue;
-		}
-
-		const QVector3D q = QVector3D::crossProduct(s, edge1);
-		const float v = f * QVector3D::dotProduct(rayVector, q);
-		if (0.0f > v || (u + v) > 1.0f)
-		{
-			continue;
-		}
-
-		const float t = f * QVector3D::dotProduct(edge2, q);
-		if (t > Epsilon)
-		{
-			++trianglesPassed;
-		}
-	}
-
-	return {.m_point = pointPosition,
-	    .m_status = trianglesPassed % 2 == 0 ? ApproximationPoint::PointStatus::Outside
-	                                         : ApproximationPoint::PointStatus::Inside};
-}
-
-std::vector<Triangle> VolumeApproximator::getGeometryTriangles() const
-{
-	//  assert(m_geometryView->primitiveType() ==
-	//  Qt3DCore::QGeometryView::Triangles);
-	assert(m_geometry);
-	const QList<Qt3DCore::QAttribute*> attributes = m_geometry->attributes();
+	assert(m_Geometry);
+	//assert(m_Geometry->primitiveType() == Qt3DCore::QGeometryView::PrimitiveType::Triangles);
+	const QList<Qt3DCore::QAttribute*> attributes = m_Geometry->attributes();
 
 	const QString vertexAttributeName = Qt3DCore::QAttribute::defaultPositionAttributeName();
 	constexpr Qt3DCore::QAttribute::AttributeType indexAttributeType =
@@ -153,7 +97,7 @@ std::vector<Triangle> VolumeApproximator::getGeometryTriangles() const
 	return triangles;
 }
 
-std::vector<QVector3D> VolumeApproximator::generateRandomPoints(const int count,
+std::vector<QVector3D> VolumeApproximationManager::generateRandomPoints(const int count,
     const QVector3D& minExtent,
     const QVector3D& maxExtent) const
 {
@@ -173,7 +117,8 @@ std::vector<QVector3D> VolumeApproximator::generateRandomPoints(const int count,
 	return randomPoints;
 }
 
-std::vector<QVector3D> VolumeApproximator::getVertices(const Qt3DCore::QAttribute& vertexAttribute)
+std::vector<QVector3D> VolumeApproximationManager::getVertices(
+    const Qt3DCore::QAttribute& vertexAttribute)
 {
 	assert(vertexAttribute.vertexBaseType() == Qt3DCore::QAttribute::Float);
 	static_assert(sizeof(QVector3D) == sizeof(std::array<float, 3>));
@@ -189,15 +134,15 @@ std::vector<QVector3D> VolumeApproximator::getVertices(const Qt3DCore::QAttribut
 	for (uint i = 0; i < vertexCount; ++i)
 	{
 		const char* const vertexPtr = ptr + (i * stride) + offset;
-		QVector3D vertex{Qt::Initialization::Uninitialized};
+		QVector3D& vertex = vertices.emplace_back(Qt::Initialization::Uninitialized);
 		std::memcpy(&vertex, vertexPtr, sizeof(QVector3D));
-		vertices.push_back(std::move(vertex));
 	}
 
 	return vertices;
 }
 
-std::vector<ushort> VolumeApproximator::getIndices(const Qt3DCore::QAttribute& indexAttribute)
+std::vector<ushort> VolumeApproximationManager::getIndices(
+    const Qt3DCore::QAttribute& indexAttribute)
 {
 	assert(indexAttribute.vertexBaseType() == Qt3DCore::QAttribute::UnsignedShort);
 	const QByteArray& indexesData = indexAttribute.buffer()->data();
