@@ -15,7 +15,10 @@ namespace Qt3DCore
 class QGeometry;
 }
 
+namespace VolumeApproximation
+{
 class ApproximationResult;
+}
 
 class DisplayWidget : public QWidget
 {
@@ -32,7 +35,7 @@ signals:
 private slots:
 	void onStartButtonClick();
 	void onLoadMeshButtonClick();
-	void volumeApproximationDone(const ApproximationResult& approximationResult);
+	void volumeApproximationDone(const VolumeApproximation::ApproximationResult& approximationResult);
 
 private:
 	std::unique_ptr<Ui::DisplayWidget> m_ui;

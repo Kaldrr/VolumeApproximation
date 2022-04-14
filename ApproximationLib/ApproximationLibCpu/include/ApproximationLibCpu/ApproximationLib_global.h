@@ -1,4 +1,4 @@
-#pragma once
+#pragma once 
 
 #if defined(WIN32) || defined(_WIN32) || defined(__WIN32) && !defined(__CYGWIN__)
 #define DECL_EXPORT __declspec(dllexport)
@@ -9,8 +9,8 @@
 #define DECL_HIDDEN __attribute__((visibility("hidden")))
 #endif
 
-#if defined(APPROXIMATION_LIBRARY)
-#define APPROXIMATIONLIB_EXPORT DECL_EXPORT
+#if defined(APPROXIMATION_LIBRARY_CPU)
+#define APPROXLIBCPU_EXPORT DECL_EXPORT
 #else
-#define APPROXIMATIONLIB_EXPORT DECL_IMPORT
+#define APPROXLIBCPU_EXPORT DECL_IMPORT
 #endif
