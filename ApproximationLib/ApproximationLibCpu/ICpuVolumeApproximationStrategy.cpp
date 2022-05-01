@@ -46,7 +46,6 @@ ApproximationPoint ICpuVolumeApproximationStrategy::computePoint(const Vector3F&
 	}
 
 	return {.m_point = pointPosition,
-	    .m_status = trianglesPassed % 2 == 0 ? PointStatus::Outside
-	                                         : PointStatus::Inside};
+	    .m_status = trianglesPassed % 2 == 0 ? PointStatus::Outside : PointStatus::Inside};
 }
 } // namespace VolumeApproximation::Impl

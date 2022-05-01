@@ -27,64 +27,16 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>128</width>
-        <height>832</height>
+        <width>139</width>
+        <height>843</height>
        </rect>
       </property>
       <attribute name="label">
        <string>Settings</string>
       </attribute>
-      <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0,0,0,0,0,1">
+      <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0,0,0,1">
        <item>
         <spacer name="verticalSpacer_2">
-         <property name="orientation">
-          <enum>Qt::Vertical</enum>
-         </property>
-         <property name="sizeHint" stdset="0">
-          <size>
-           <width>20</width>
-           <height>40</height>
-          </size>
-         </property>
-        </spacer>
-       </item>
-       <item>
-        <widget class="QGroupBox" name="pointsSettings">
-         <property name="title">
-          <string>Points options</string>
-         </property>
-         <property name="alignment">
-          <set>Qt::AlignCenter</set>
-         </property>
-         <layout class="QVBoxLayout" name="verticalLayout_2">
-          <item>
-           <widget class="QLabel" name="label_2">
-            <property name="text">
-             <string>Radius</string>
-            </property>
-            <property name="alignment">
-             <set>Qt::AlignCenter</set>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QDoubleSpinBox" name="pointRadiusInput">
-            <property name="decimals">
-             <number>3</number>
-            </property>
-            <property name="maximum">
-             <double>100.000000000000000</double>
-            </property>
-            <property name="singleStep">
-             <double>0.001000000000000</double>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </widget>
-       </item>
-       <item>
-        <spacer name="verticalSpacer_3">
          <property name="orientation">
           <enum>Qt::Vertical</enum>
          </property>

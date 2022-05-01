@@ -84,19 +84,18 @@ void VolumeApproximationManager::SetStrategy(VolumeApproximation::ApproximationE
 std::vector<VolumeApproximation::Triangle> VolumeApproximationManager::getGeometryTriangles(
     const Qt3DCore::QGeometry& geometry)
 {
-	// assert(m_Geometry->primitiveType() == Qt3DCore::QGeometryView::PrimitiveType::Triangles);
 	const QList<Qt3DCore::QAttribute*> attributes = geometry.attributes();
 
 	const QString vertexAttributeName = Qt3DCore::QAttribute::defaultPositionAttributeName();
 	constexpr Qt3DCore::QAttribute::AttributeType indexAttributeType =
 	    Qt3DCore::QAttribute::AttributeType::IndexAttribute;
 
-	const auto vertexAttributeItr =
-	    std::ranges::find_if(attributes, [&](const Qt3DCore::QAttribute* const attribute) {
+	const auto vertexAttributeItr = std::ranges::find_if(attributes,
+	    [&vertexAttributeName](const Qt3DCore::QAttribute* const attribute) {
 		    return attribute && attribute->name() == vertexAttributeName;
 	    });
-	const auto indexAttributeItr =
-	    std::ranges::find_if(attributes, [=](const Qt3DCore::QAttribute* const attribute) {
+	const auto indexAttributeItr = std::ranges::find_if(attributes,
+	    [indexAttributeType](const Qt3DCore::QAttribute* const attribute) {
 		    return attribute && attribute->attributeType() == indexAttributeType;
 	    });
 

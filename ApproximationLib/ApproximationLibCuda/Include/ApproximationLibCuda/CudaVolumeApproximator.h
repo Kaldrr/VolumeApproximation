@@ -12,7 +12,7 @@ class APPROXLIBCUDA_EXPORT CudaVolumeApproximator : public IVolumeApproximationS
 public:
 	CudaVolumeApproximator() = default;
 
-	bool IsAvialiable() const noexcept override;
+	bool IsAvialiable() const override;
 	ApproximationResult ComputeVolume(const std::vector<Triangle>& triangles,
 	    const std::vector<Vector3F>& randomPoints,
 	    const Vector3F& minimumExtent,

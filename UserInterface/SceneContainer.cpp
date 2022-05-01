@@ -50,18 +50,7 @@ SceneContainer::SceneContainer(QWidget* const parent)
 	m_cameraController->setLookSpeed(180.0f);
 	m_cameraController->setCamera(camera);
 
-	// m_sphereMesh.setRings(20);
-	// m_sphereMesh.setSlices(20);
-	// m_sphereMesh.setGenerateTangents(true);
-
-	// TODO: Rethink showing spheres in the scene
-	// m_sphereMaterial.setDiffuse(QColor{ 0, 0, 255, 0 });
-	//  m_sphereMaterial.setAlphaBlendingEnabled(true);
-
 	m_3dWindow.setRootEntity(m_rootEntity.get());
-
-	// m_sphereMesh.view()->setPrimitiveType(
-	//	Qt3DCore::QGeometryView::PrimitiveType::LineStrip);
 
 	connect(&m_mainMesh, &Qt3DRender::QMesh::statusChanged, this,
 	    &SceneContainer::onMeshStatusChanged);
@@ -71,18 +60,6 @@ const Qt3DCore::QGeometry* SceneContainer::getGeometry() const
 {
 	return m_mainMesh.geometry();
 }
-
-// void SceneContainer::addSphere(const QVector3D& position) {
-//	auto* const newSphere = new Qt3DCore::QEntity{ m_rootEntity.get() };
-//	m_spheres.push_back(newSphere);
-//
-//	auto* const sphereTransform = new Qt3DCore::QTransform{ newSphere };
-//	sphereTransform->setTranslation(position);
-//
-//	newSphere->addComponent(&m_sphereMesh);
-//	newSphere->addComponent(&m_sphereMaterial);
-//	newSphere->addComponent(sphereTransform);
-// }
 
 void SceneContainer::setMainMeshPath(const QUrl& meshFile)
 {
@@ -98,10 +75,6 @@ void SceneContainer::setCameraDistance(const QVector3D& distance)
 {
 	m_cameraDistance = distance;
 }
-
-// void SceneContainer::updatePointsRadius(const double radius) {
-//	m_sphereMesh.setRadius(radius);
-// }
 
 void SceneContainer::onMeshStatusChanged(const Qt3DRender::QMesh::Status newStatus)
 {

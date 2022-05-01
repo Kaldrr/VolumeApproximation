@@ -36,7 +36,7 @@ public:
 
 using Triangle = std::array<Vector3F, 3>;
 
-class __declspec(novtable) APPROXIMATIONLIB_INTERFACE_EXPORT IVolumeApproximationStrategy
+class APPROXIMATIONLIB_INTERFACE_EXPORT IVolumeApproximationStrategy
 {
 public:
 	IVolumeApproximationStrategy() = default;

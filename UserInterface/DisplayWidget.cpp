@@ -29,8 +29,6 @@ DisplayWidget::DisplayWidget(QWidget* parent)
 	connect(m_ui->startButton, &QPushButton::clicked, this, &DisplayWidget::onStartButtonClick);
 	connect(m_ui->loadMeshButton, &QPushButton::clicked, this,
 	    &DisplayWidget::onLoadMeshButtonClick);
-	// connect(m_ui->pointRadiusInput, &QDoubleSpinBox::valueChanged,
-	//	m_ui->sceneContainer, &SceneContainer::updatePointsRadius);
 
 	m_ui->pointRadiusInput->setValue(0.05);
 
@@ -97,10 +95,6 @@ void DisplayWidget::volumeApproximationDone(const VolumeApproximation::Approxima
 	                                            static_cast<long double>(points.m_points.size()));
 
 	fmt::print("Mesh volume: {} cm3\n", finalVolume);
-
-	// TODO: Use VolumeApproxmiation, to make a graph
-	// x-axis: points used to approximate
-	// y-axis: volume from the points
 }
 
 DisplayWidget::~DisplayWidget()
