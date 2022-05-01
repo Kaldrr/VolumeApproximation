@@ -35,7 +35,7 @@ __global__ void ComputePoint(const thrust::device_ptr<const float> triangles,
 namespace VolumeApproximation::Impl
 {
 
-bool CudaVolumeApproximator::IsAvialiable() const noexcept
+bool CudaVolumeApproximator::IsAvialiable() const
 {
 	// Should be avialiable if we have at least one device
 	int devicesCount{};
@@ -51,14 +51,7 @@ ApproximationResult CudaVolumeApproximator::ComputeVolume(const std::vector<Tria
     const Vector3F& minimumExtent,
     const Vector3F& maximumExtent)
 {
-	// const thrust::device_vector<float> gpuTriangles{triangles};
-	// const thrust::device_vector<float> gpuPoints{randomPoints};
-	// const thrust::device_vector<float> gpuMinExtent{minimumExtent, minimumExtent + 3};
-	// const thrust::device_vector<float> gpuMaxExtent{maximumExtent, maximumExtent + 3};
-
-	// ComputePoint<<<1, 1>>>(gpuTriangles.data(), gpuTriangles.size(), gpuPoints.data(),
-	//     gpuPoints.size(), gpuMinExtent.data(), gpuMaxExtent.data());
-
+	// TODO: Implement the CUDA version
 	return {};
 }
 } // namespace VolumeApproximation::Impl

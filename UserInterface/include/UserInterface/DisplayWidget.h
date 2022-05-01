@@ -35,7 +35,8 @@ signals:
 private slots:
 	void onStartButtonClick();
 	void onLoadMeshButtonClick();
-	void volumeApproximationDone(const VolumeApproximation::ApproximationResult& approximationResult);
+	void volumeApproximationDone(
+	    const VolumeApproximation::ApproximationResult& approximationResult);
 
 private:
 	std::unique_ptr<Ui::DisplayWidget> m_ui;

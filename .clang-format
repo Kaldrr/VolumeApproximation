@@ -4,7 +4,7 @@ Standard: c++20
 BreakBeforeBinaryOperators: None
 BreakBeforeBraces: Custom
 BraceWrapping:
-  AfterCaseLabel: true # CLANG10
+  AfterCaseLabel: true
   AfterClass: true
   AfterControlStatement: true
   AfterEnum: true
@@ -26,10 +26,10 @@ AlwaysBreakBeforeMultilineStrings: true
 BinPackArguments: true
 BinPackParameters: false
 
-AlignAfterOpenBracket: DontAlign # BAS_Align could be nice
-AlignConsecutiveMacros: false # CLANG10
-AlignConsecutiveDeclarations: false # This one might be nice to set to true
-AlignEscapedNewlines: DontAlign # This one might be nice to set to ENAS_Left
+AlignAfterOpenBracket: DontAlign
+AlignConsecutiveMacros: false 
+AlignConsecutiveDeclarations: false 
+AlignEscapedNewlines: DontAlign
 
 AlignOperands: true
 AllowAllParametersOfDeclarationOnNextLine: false
@@ -38,8 +38,8 @@ AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: InlineOnly
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-AllowShortLambdasOnASingleLine: false # CLANG10
-AllowAllArgumentsOnNextLine: false #CLANG10
+AllowShortLambdasOnASingleLine: false 
+AllowAllArgumentsOnNextLine: false
 
 BreakConstructorInitializers: BeforeComma
 BreakInheritanceList: BeforeComma
@@ -66,7 +66,6 @@ IndentWrappedFunctionNames: false
 
 NamespaceIndentation: None
 SpaceAfterCStyleCast: false
-#SpaceAfterLogicalNot: false # CLANG10
 SpaceBeforeParens: ControlStatements
 SpaceBeforeRangeBasedForLoopColon: true
 
@@ -82,27 +81,9 @@ IndentWidth: 4
 TabWidth: 4
 UseTab: ForIndentation
 
-# The penalty for breaking around an assignment operator.
 PenaltyBreakAssignment: 0
-
-# The penalty for breaking a function call after call.
-PenaltyBreakBeforeFirstCallParameter: 300
-
-# The penalty for each line break introduced inside a comment.
 PenaltyBreakComment: 0
-
-# The penalty for breaking before the first <<.
 PenaltyBreakFirstLessLess: 0
-
-# The penalty for each line break introduced inside a string literal.
 PenaltyBreakString: 0
-
-# The penalty for breaking after template declaration.
-PenaltyBreakTemplateDeclaration: 500
-
-# The penalty for each character outside of the column limit.
-# Never go over 100, set it to rediculous levels
-PenaltyExcessCharacter: 9000
-
-# Penalty for putting the return type of a function onto its own line.
+PenaltyExcessCharacter: 1000
 PenaltyReturnTypeOnItsOwnLine: 200

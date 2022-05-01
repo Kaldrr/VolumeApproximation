@@ -6,8 +6,8 @@
 namespace VolumeApproximation::Impl
 {
 
-ApproximationResult
-ParallelAlgorithmVolumeApproximationStrategy::ComputeVolume(const std::vector<Triangle>& triangles,
+ApproximationResult ParallelAlgorithmVolumeApproximationStrategy::ComputeVolume(
+    const std::vector<Triangle>& triangles,
     const std::vector<Vector3F>& randomPoints,
     const Vector3F& minimumExtent,
     const Vector3F& maximumExtent)

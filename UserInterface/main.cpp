@@ -8,8 +8,6 @@
 
 void RegisterMetatypes()
 {
-	// There has to be a better way to do this...
-	// qRegisterMetaType<Qt3DCore::QGeometry>();
 	qRegisterMetaType<Qt3DCore::QGeometry*>();
 	qRegisterMetaType<const Qt3DCore::QGeometry*>();
 }
@@ -17,7 +15,7 @@ void RegisterMetatypes()
 int main(int argc, char** argv)
 {
 #ifndef NDEBUG
-	fmt::print("We in debug mode :)\n");
+	fmt::print("Executing in debug mode\n");
 #endif
 	RegisterMetatypes();
 

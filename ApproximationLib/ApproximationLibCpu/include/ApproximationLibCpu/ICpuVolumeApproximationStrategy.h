@@ -11,7 +11,7 @@ class APPROXLIBCPU_EXPORT ICpuVolumeApproximationStrategy : public IVolumeApprox
 {
 public:
 	virtual ~ICpuVolumeApproximationStrategy() = default;
-	bool IsAvialiable() const override { return true; };
+	bool IsAvialiable() const noexcept override { return true; };
 
 protected:
 	static ApproximationPoint computePoint(const Vector3F& origin,
