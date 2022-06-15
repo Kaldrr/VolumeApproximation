@@ -10,6 +10,9 @@
 #include <QFileDialog>
 #include <QStandardPaths>
 
+// emit macro causes issues on Linux, as <execution> uses intel TBB which has 'emit' functions inside it
+// Q_EMIT should cover this case in this file
+#undef emit
 #include <execution>
 #include <limits>
 
@@ -30,7 +33,7 @@ DisplayWidget::DisplayWidget(QWidget* parent)
 	connect(m_ui->loadMeshButton, &QPushButton::clicked, this,
 	    &DisplayWidget::onLoadMeshButtonClick);
 
-	m_ui->pointRadiusInput->setValue(0.05);
+    //m_ui->pointRadiusInput->setValue(0.05);
 
 	// Move worker to a sperate thread, so we don't block main ui-thread
 	auto* const volumeManager = new VolumeApproximationManager{};
@@ -59,7 +62,7 @@ void DisplayWidget::onStartButtonClick()
 		return;
 	}
 
-	emit volumeApproximationRequested(geometry, sampleCount);
+    Q_EMIT volumeApproximationRequested(geometry, sampleCount);
 }
 
 void DisplayWidget::onLoadMeshButtonClick()

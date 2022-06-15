@@ -2,7 +2,10 @@
 
 #include <ApproximationLibCpu/ParallelAlgorithmVolumeApproximationStrategy.h>
 
+#ifdef CUDA_ENABLED
 #include <ApproximationLibCuda/CudaVolumeApproximator.h>
+#endif
+
 
 namespace VolumeApproximation
 {
@@ -16,10 +19,14 @@ std::unique_ptr<IVolumeApproximationStrategy> CreateApproximationStrategy(
 {
 	switch (approximationExecutor)
 	{
+#ifdef CUDA_ENABLED
 		case ApproximationExecutor::Cuda:
 			return std::make_unique<Impl::CudaVolumeApproximator>();
-		case ApproximationExecutor::ParallelCpu:
+#endif
+        case ApproximationExecutor::ParallelCpu:
 			return std::make_unique<Impl::ParallelAlgorithmVolumeApproximationStrategy>();
+        default:
+            return nullptr;
 	}
 	return nullptr;
 }

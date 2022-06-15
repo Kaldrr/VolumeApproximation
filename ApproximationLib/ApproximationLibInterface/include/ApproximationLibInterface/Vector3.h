@@ -6,8 +6,10 @@
 #include <cmath>
 #include <type_traits>
 
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4251)
+#endif
 
 namespace VolumeApproximation
 {
@@ -155,4 +157,6 @@ inline constexpr bool Vector3<T>::FuzzyIsZero(float f) noexcept
 
 } // namespace VolumeApproximation
 
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif

@@ -5,9 +5,12 @@
 
 #include <array>
 #include <vector>
+#include <cstdint>
 
+#ifdef _MSC_VER
 #pragma warning(push)
 #pragma warning(disable : 4251)
+#endif
 
 namespace VolumeApproximation
 {
@@ -56,4 +59,6 @@ public:
 };
 } // namespace VolumeApproximation
 
+#ifdef _MSC_VER
 #pragma warning(pop)
+#endif

@@ -16,7 +16,7 @@ class QAttribute;
 
 class VolumeApproximationManager : public QObject
 {
-	Q_OBJECT;
+    Q_OBJECT
 
 public:
 	VolumeApproximationManager();

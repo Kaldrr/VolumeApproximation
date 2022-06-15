@@ -47,6 +47,10 @@ target_include_directories(VolumeApproximation
     PUBLIC 
         include
 )
+target_link_libraries(VolumeApproximation
+    PUBLIC
+        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:tbb>
+)
 
 qt_finalize_executable(VolumeApproximation)
 
@@ -56,17 +60,17 @@ add_custom_command(TARGET VolumeApproximation POST_BUILD
 )
 
 if (WIN32) 
-get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
-get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
-find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
+    get_target_property(_qmake_executable Qt6::qmake IMPORTED_LOCATION)
+    get_filename_component(_qt_bin_dir "${_qmake_executable}" DIRECTORY)
+    find_program(WINDEPLOYQT_EXECUTABLE windeployqt HINTS "${_qt_bin_dir}")
 
-add_custom_command(TARGET VolumeApproximation POST_BUILD
-    COMMAND "${CMAKE_COMMAND}" -E
-        env PATH="${_qt_bin_dir}" "${WINDEPLOYQT_EXECUTABLE}"
-            "$<$<CONFIG:Debug>:--debug>"
-            "$<$<CONFIG:Release>:--release>"
-            "--no-compiler-runtime"
-            "$<TARGET_FILE:VolumeApproximation>"
-    COMMENT "Running windeployqt..."
+    add_custom_command(TARGET VolumeApproximation POST_BUILD
+        COMMAND "${CMAKE_COMMAND}" -E
+            env PATH="${_qt_bin_dir}" "${WINDEPLOYQT_EXECUTABLE}"
+                "$<$<CONFIG:Debug>:--debug>"
+                "$<$<CONFIG:Release>:--release>"
+                "--no-compiler-runtime"
+                "$<TARGET_FILE:VolumeApproximation>"
+        COMMENT "Running windeployqt..."
 )
 endif(WIN32)

@@ -1,6 +1,11 @@
+set(CUDA_ENABLED false CACHE BOOL "Enable CUDA backend")
+
 add_subdirectory(ApproximationLibInterface)
 add_subdirectory(ApproximationLibCpu)
-add_subdirectory(ApproximationLibCuda)
+if(CUDA_ENABLED)
+    add_definitions(CUDA_ENABLED)
+    add_subdirectory(ApproximationLibCuda)
+endif()
 
 set(HEADER_FILES
     include/ApproximationLib/ApproximationHelper.h
@@ -20,7 +25,7 @@ target_link_libraries(ApproximationLib
     PUBLIC 
         ApproximationLibInterface
     PRIVATE
-        ApproximationLibCuda
+    #   ApproximationLibCuda
         ApproximationLibCpu
 )
 target_include_directories(ApproximationLib 
