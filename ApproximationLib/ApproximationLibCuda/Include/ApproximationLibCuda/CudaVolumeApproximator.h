@@ -4,7 +4,9 @@
 
 #include <ApproximationLibInterface/IVolumeApproximationStrategy.h>
 
-namespace VolumeApproximation::Impl
+namespace VolumeApproximation
+{
+namespace Impl
 {
 
 class APPROXLIBCUDA_EXPORT CudaVolumeApproximator : public IVolumeApproximationStrategy
@@ -18,4 +20,5 @@ public:
 	    const Vector3F& minimumExtent,
 	    const Vector3F& maximumExtent) override;
 };
-} // namespace VolumeApproximation::Impl
+} // namespace Impl
+} // namespace VolumeApproximation

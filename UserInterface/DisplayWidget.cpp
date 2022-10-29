@@ -33,7 +33,35 @@ DisplayWidget::DisplayWidget(QWidget* parent)
 	connect(m_ui->loadMeshButton, &QPushButton::clicked, this,
 	    &DisplayWidget::onLoadMeshButtonClick);
 
-    //m_ui->pointRadiusInput->setValue(0.05);
+#include <execution>
+#include <limits>
+
+#include <fmt/core.h>
+
+DisplayWidget::DisplayWidget() : DisplayWidget{nullptr}
+{
+}
+
+DisplayWidget::DisplayWidget(QWidget* parent)
+    : QWidget{parent}, m_ui{std::make_unique<Ui::DisplayWidget>()}
+{
+	m_ui->setupUi(this);
+
+	m_ui->samplesCountInput->setRange(0, std::numeric_limits<int>::max());
+
+	connect(m_ui->startButton, &QPushButton::clicked, this, &DisplayWidget::onStartButtonClick);
+	connect(m_ui->loadMeshButton, &QPushButton::clicked, this,
+	    &DisplayWidget::onLoadMeshButtonClick);
+
+	// m_ui->pointRadiusInput->setValue(0.05);
+	constexpr std::span executors = VolumeApproximationManager::GetAvaliableExecutors();
+	for (const auto [enumValue, name] : executors)
+	{
+		m_ui->engineSelect->addItem(QString::fromUtf8(name.data(), name.size()),
+		    QVariant::fromValue(enumValue));
+	}
+	connect(m_ui->engineSelect, &QComboBox::currentIndexChanged, this,
+	    &DisplayWidget::onComputeEngineChanged);
 
 	// Move worker to a sperate thread, so we don't block main ui-thread
 	auto* const volumeManager = new VolumeApproximationManager{};
@@ -43,6 +71,8 @@ DisplayWidget::DisplayWidget(QWidget* parent)
 	    &VolumeApproximationManager::geometryVolumeRequested);
 	connect(volumeManager, &VolumeApproximationManager::approximationFinished, this,
 	    &DisplayWidget::volumeApproximationDone);
+	connect(this, &DisplayWidget::computeEngineRequestd, volumeManager,
+	    &VolumeApproximationManager::SetStrategy);
 	m_workerThread.start();
 }
 
@@ -98,6 +128,17 @@ void DisplayWidget::volumeApproximationDone(const VolumeApproximation::Approxima
 	                                            static_cast<long double>(points.m_points.size()));
 
 	fmt::print("Mesh volume: {} cm3\n", finalVolume);
+}
+
+void DisplayWidget::onComputeEngineChanged(int newIndex)
+{
+	if (newIndex == -1)
+		return;
+
+	const QVariant enumVariant = m_ui->engineSelect->itemData(newIndex);
+	const auto executor = enumVariant.value<VolumeApproximation::ApproximationExecutor>();
+
+	emit computeEngineRequestd(executor);
 }
 
 DisplayWidget::~DisplayWidget()

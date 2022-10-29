@@ -11,7 +11,8 @@ namespace VolumeApproximation
 {
 std::unique_ptr<IVolumeApproximationStrategy> CreateDefaultStrategy()
 {
-	return std::make_unique<Impl::ParallelAlgorithmVolumeApproximationStrategy>();
+	// return std::make_unique<Impl::ParallelAlgorithmVolumeApproximationStrategy>();
+	return CreateApproximationStrategy(ApproximationExecutor::Cuda);
 }
 
 std::unique_ptr<IVolumeApproximationStrategy> CreateApproximationStrategy(
