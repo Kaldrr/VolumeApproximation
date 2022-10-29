@@ -14,77 +14,56 @@ using VolumeApproximation::Vector3F;
 
 namespace
 {
-constexpr std::string_view EnumToString(
-    const VolumeApproximation::ApproximationExecutor approximationStrategy)
+
+std::vector<VolumeApproximation::Vector3F> getVertices(const Qt3DCore::QAttribute& vertexAttribute)
 {
-	switch (approximationStrategy)
+	assert(vertexAttribute.vertexBaseType() == Qt3DCore::QAttribute::Float);
+	static_assert(sizeof(Vector3F) == sizeof(std::array<float, 3>));
+
+	const QByteArray verticesData = vertexAttribute.buffer()->data();
+	const uint vertexCount = vertexAttribute.count();
+	const uint offset = vertexAttribute.byteOffset();
+	const uint stride = vertexAttribute.byteStride();
+	const char* const ptr = verticesData.constData();
+
+	std::vector<Vector3F> vertices{};
+	vertices.reserve(vertexCount);
+	for (uint i = 0; i < vertexCount; ++i)
 	{
-		case VolumeApproximation::ApproximationExecutor::Cuda:
-			return "CUDA";
-		case VolumeApproximation::ApproximationExecutor::ParallelCpu:
-			return "ParallelAlgorithm";
-	}
-	assert(false);
-	return "";
-}
-} // namespace
-
-VolumeApproximationManager::VolumeApproximationManager() : VolumeApproximationManager{nullptr}
-{
-}
-
-VolumeApproximationManager::VolumeApproximationManager(QObject* const parent)
-    : QObject{parent}, m_VolumeApproximationStrategy{VolumeApproximation::CreateDefaultStrategy()}
-{
-}
-
-void VolumeApproximationManager::geometryVolumeRequested(const Qt3DCore::QGeometry* geometry,
-    const int sampleSize)
-{
-	if (geometry == nullptr)
-		return;
-
-	const std::vector<VolumeApproximation::Triangle> geometryTriangles =
-	    getGeometryTriangles(*geometry);
-	if (geometryTriangles.empty())
-	{
-		return;
+		const char* const vertexPtr = ptr + (i * stride) + offset;
+		Vector3F& vertex = vertices.emplace_back();
+		std::memcpy(&vertex, vertexPtr, sizeof(Vector3F));
 	}
 
-	constexpr float minValue = std::numeric_limits<float>::min();
-	constexpr float maxValue = std::numeric_limits<float>::max();
+	return vertices;
+}
 
-	Vector3F minExtent{maxValue, maxValue, maxValue};
-	Vector3F maxExtent{minValue, minValue, minValue};
+std::vector<ushort> getIndices(const Qt3DCore::QAttribute& indexAttribute)
+{
+	assert(indexAttribute.vertexBaseType() == Qt3DCore::QAttribute::UnsignedShort);
+	const QByteArray indexesData = indexAttribute.buffer()->data();
+	const uint indicesCount = indexAttribute.count();
+	const uint offset = indexAttribute.byteOffset();
+	const uint stride =
+	    indexAttribute.byteStride() != 0 ? indexAttribute.byteStride() : sizeof(ushort);
+	const char* const ptr = indexesData.constData();
 
-	for (const VolumeApproximation::Triangle& triangle : geometryTriangles)
+	std::vector<ushort> indices{};
+	indices.reserve(indicesCount);
+	for (uint i = 0; i < indicesCount; ++i)
 	{
-		for (const Vector3F& vertex : triangle)
-		{
-			for (int i = 0; i < 3; ++i)
-			{
-				minExtent[i] = std::min(vertex[i], minExtent[i]);
-				maxExtent[i] = std::max(vertex[i], maxExtent[i]);
-			}
-		}
+		const char* const indexPtr = ptr + (i * stride) + offset;
+		ushort index;
+		std::memcpy(&index, indexPtr, sizeof(ushort));
+		indices.push_back(index);
 	}
 
-	const std::vector<Vector3F> randomPoints =
-	    generateRandomPoints(sampleSize, minExtent, maxExtent);
-
-	emit approximationFinished(m_VolumeApproximationStrategy->ComputeVolume(geometryTriangles,
-	    randomPoints, minExtent, maxExtent));
+	return indices;
 }
 
-void VolumeApproximationManager::SetStrategy(VolumeApproximation::ApproximationExecutor strategy)
+std::vector<VolumeApproximation::Triangle> getGeometryTriangles(const Qt3DCore::QGeometry& geometry)
 {
-	m_VolumeApproximationStrategy = VolumeApproximation::CreateApproximationStrategy(strategy);
-}
-
-std::vector<VolumeApproximation::Triangle> VolumeApproximationManager::getGeometryTriangles(
-    const Qt3DCore::QGeometry& geometry)
-{
-	const QList<Qt3DCore::QAttribute*> attributes = geometry.attributes();
+	const QList<Qt3DCore::QAttribute*>& attributes = geometry.attributes();
 
 	const QString vertexAttributeName = Qt3DCore::QAttribute::defaultPositionAttributeName();
 	constexpr Qt3DCore::QAttribute::AttributeType indexAttributeType =
@@ -121,9 +100,9 @@ std::vector<VolumeApproximation::Triangle> VolumeApproximationManager::getGeomet
 	return triangles;
 }
 
-std::vector<Vector3F> VolumeApproximationManager::generateRandomPoints(const int count,
-    const Vector3F& minExtent,
-    const Vector3F& maxExtent)
+std::vector<VolumeApproximation::Vector3F> generateRandomPoints(const int count,
+    const VolumeApproximation::Vector3F& minExtent,
+    const VolumeApproximation::Vector3F& maxExtent)
 {
 	std::vector<Vector3F> randomPoints{};
 	randomPoints.reserve(count);
@@ -140,51 +119,55 @@ std::vector<Vector3F> VolumeApproximationManager::generateRandomPoints(const int
 
 	return randomPoints;
 }
+} // namespace
 
-std::vector<Vector3F> VolumeApproximationManager::getVertices(
-    const Qt3DCore::QAttribute& vertexAttribute)
+VolumeApproximationManager::VolumeApproximationManager() : VolumeApproximationManager{nullptr}
 {
-	assert(vertexAttribute.vertexBaseType() == Qt3DCore::QAttribute::Float);
-	static_assert(sizeof(Vector3F) == sizeof(std::array<float, 3>));
-
-	const QByteArray verticesData = vertexAttribute.buffer()->data();
-	const uint vertexCount = vertexAttribute.count();
-	const uint offset = vertexAttribute.byteOffset();
-	const uint stride = vertexAttribute.byteStride();
-	const char* const ptr = verticesData.constData();
-
-	std::vector<Vector3F> vertices{};
-	vertices.reserve(vertexCount);
-	for (uint i = 0; i < vertexCount; ++i)
-	{
-		const char* const vertexPtr = ptr + (i * stride) + offset;
-		Vector3F& vertex = vertices.emplace_back();
-		std::memcpy(&vertex, vertexPtr, sizeof(Vector3F));
-	}
-
-	return vertices;
 }
 
-std::vector<ushort> VolumeApproximationManager::getIndices(
-    const Qt3DCore::QAttribute& indexAttribute)
+VolumeApproximationManager::VolumeApproximationManager(QObject* const parent)
+    : QObject{parent}, m_VolumeApproximationStrategy{VolumeApproximation::CreateDefaultStrategy()}
 {
-	assert(indexAttribute.vertexBaseType() == Qt3DCore::QAttribute::UnsignedShort);
-	const QByteArray indexesData = indexAttribute.buffer()->data();
-	const uint indicesCount = indexAttribute.count();
-	const uint offset = indexAttribute.byteOffset();
-	const uint stride =
-	    indexAttribute.byteStride() != 0 ? indexAttribute.byteStride() : sizeof(ushort);
-	const char* const ptr = indexesData.constData();
+}
 
-	std::vector<ushort> indices{};
-	indices.reserve(indicesCount);
-	for (uint i = 0; i < indicesCount; ++i)
+void VolumeApproximationManager::geometryVolumeRequested(const Qt3DCore::QGeometry* geometry,
+    const int sampleSize)
+{
+	if (geometry == nullptr)
+		return;
+
+	const std::vector<VolumeApproximation::Triangle> geometryTriangles =
+	    getGeometryTriangles(*geometry);
+	if (geometryTriangles.empty())
+		return;
+
+	constexpr float minValue = std::numeric_limits<float>::min();
+	constexpr float maxValue = std::numeric_limits<float>::max();
+
+	Vector3F minExtent{maxValue, maxValue, maxValue};
+	Vector3F maxExtent{minValue, minValue, minValue};
+
+	for (const VolumeApproximation::Triangle& triangle : geometryTriangles)
 	{
-		const char* const indexPtr = ptr + (i * stride) + offset;
-		ushort index;
-		std::memcpy(&index, indexPtr, sizeof(ushort));
-		indices.push_back(index);
+		for (const Vector3F& vertex : triangle)
+		{
+			for (int i = 0; i < 3; ++i)
+			{
+				minExtent[i] = std::min(vertex[i], minExtent[i]);
+				maxExtent[i] = std::max(vertex[i], maxExtent[i]);
+			}
+		}
 	}
 
-	return indices;
+	const std::vector<Vector3F> randomPoints =
+	    generateRandomPoints(sampleSize, minExtent, maxExtent);
+
+	emit approximationFinished(m_VolumeApproximationStrategy->ComputeVolume(geometryTriangles,
+	    randomPoints, minExtent, maxExtent));
+}
+
+void VolumeApproximationManager::SetStrategy(
+    const VolumeApproximation::ApproximationExecutor strategy)
+{
+	m_VolumeApproximationStrategy = VolumeApproximation::CreateApproximationStrategy(strategy);
 }

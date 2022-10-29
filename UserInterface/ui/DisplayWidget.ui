@@ -27,8 +27,8 @@
        <rect>
         <x>0</x>
         <y>0</y>
-        <width>139</width>
-        <height>843</height>
+        <width>146</width>
+        <height>826</height>
        </rect>
       </property>
       <attribute name="label">
@@ -96,6 +96,16 @@
              <bool>true</bool>
             </property>
            </widget>
+          </item>
+          <item>
+           <widget class="QGroupBox" name="groupBox_2">
+            <property name="title">
+             <string>Compute engine</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QComboBox" name="engineSelect"/>
           </item>
           <item>
            <widget class="QPushButton" name="startButton">

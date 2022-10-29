@@ -2,6 +2,7 @@ find_package(fmt REQUIRED)
 
 enable_language(CUDA)
 if(NOT DEFINED CMAKE_CUDA_STANDARD)
+    set(CMAKE_CXX_STANDARD 20)
     set(CMAKE_CUDA_STANDARD 17)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
 endif()
@@ -40,6 +41,14 @@ target_include_directories(ApproximationLibCuda
 target_compile_definitions(ApproximationLibCuda 
     PRIVATE 
         APPROXIMATION_LIBRARY_CUDA
+)
+target_compile_options(ApproximationLibCuda
+    PRIVATE
+        --expt-relaxed-constexpr
+        -arch=sm_61
+        -gencode=arch=compute_60,code=sm_60 
+        -gencode=arch=compute_61,code=sm_61 
+        -gencode=arch=compute_61,code=compute_61
 )
 set_target_properties(ApproximationLibCuda 
     PROPERTIES 
