@@ -12,12 +12,16 @@
 
 #include <execution>
 #include <limits>
+#include <version>
 
 #include <fmt/core.h>
 
-#if __has_cpp_attribute(__cpp_lib_execution)
+#pragma warning(push)
+#pragma warning(disable : 4067)
+#ifdef __has_cpp_attribute(__cpp_lib_execution)
 #define USE_PARALLEL_EXECUTION
 #endif
+#pragma warning(pop)
 
 DisplayWidget::DisplayWidget() : DisplayWidget{nullptr}
 {

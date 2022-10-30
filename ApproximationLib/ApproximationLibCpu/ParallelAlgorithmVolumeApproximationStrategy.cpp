@@ -2,12 +2,17 @@
 
 #include <algorithm>
 #include <execution>
+#include <version>
 
-#if __has_cpp_attribute(__cpp_lib_execution)
+#pragma warning(push)
+#pragma warning(disable : 4067)
+#ifdef __has_cpp_attribute(__cpp_lib_execution)
 #define USE_PARALLEL_EXECUTION
 #else
 #include <thread>
+#include <functional>
 #endif
+#pragma warning(pop)
 
 namespace VolumeApproximation::Impl
 {

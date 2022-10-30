@@ -10,9 +10,12 @@
 
 #include <fmt/format.h>
 
-#if __has_cpp_attribute(__cpp_lib_ranges)
+#pragma warning(push)
+#pragma warning(disable : 4067)
+#ifdef __has_cpp_attribute(__cpp_lib_ranges)
 #define USE_RANGES
 #endif
+#pragma warning(pop)
 
 using VolumeApproximation::Vector3F;
 

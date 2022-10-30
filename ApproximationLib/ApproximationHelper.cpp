@@ -28,6 +28,5 @@ std::unique_ptr<IVolumeApproximationStrategy> CreateApproximationStrategy(
 		default:
 			return nullptr;
 	}
-	return nullptr;
 }
 } // namespace VolumeApproximation
