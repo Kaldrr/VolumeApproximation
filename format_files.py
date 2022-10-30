@@ -4,7 +4,7 @@ from subprocess import run
 
 
 def format_file(file: Path):
-    run(['clang-format.exe', '-style=file', '-i', file], check=True)
+    run(['clang-format', '-style=file', '-i', file], check=True)
 
 
 if __name__ == '__main__':
@@ -18,3 +18,4 @@ if __name__ == '__main__':
             tasks.append(pool.apply_async(format_file, (file,)))
         for task in tasks:
             task.wait()
+        print('Done!')

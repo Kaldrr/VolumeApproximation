@@ -4,8 +4,8 @@
 #include <ApproximationLibInterface/Vector3.h>
 
 #include <array>
-#include <vector>
 #include <cstdint>
+#include <vector>
 
 #ifdef _MSC_VER
 #pragma warning(push)

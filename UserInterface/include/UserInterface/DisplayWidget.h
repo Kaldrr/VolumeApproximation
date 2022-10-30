@@ -19,7 +19,7 @@ namespace VolumeApproximation
 {
 class ApproximationResult;
 enum class ApproximationExecutor;
-}
+} // namespace VolumeApproximation
 
 class DisplayWidget : public QWidget
 {
@@ -32,7 +32,7 @@ public:
 
 signals:
 	void volumeApproximationRequested(const Qt3DCore::QGeometry* geometry, const int sampleCount);
-	void computeEngineRequestd(VolumeApproximation::ApproximationExecutor executor); 
+	void computeEngineRequestd(VolumeApproximation::ApproximationExecutor executor);
 
 private slots:
 	void onStartButtonClick();

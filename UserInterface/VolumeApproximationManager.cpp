@@ -10,6 +10,10 @@
 
 #include <fmt/format.h>
 
+#if __has_cpp_attribute(__cpp_lib_ranges)
+#define USE_RANGES
+#endif
+
 using VolumeApproximation::Vector3F;
 
 namespace
@@ -69,14 +73,27 @@ std::vector<VolumeApproximation::Triangle> getGeometryTriangles(const Qt3DCore::
 	constexpr Qt3DCore::QAttribute::AttributeType indexAttributeType =
 	    Qt3DCore::QAttribute::AttributeType::IndexAttribute;
 
+#ifdef USE_RANGES
 	const auto vertexAttributeItr = std::ranges::find_if(attributes,
 	    [&vertexAttributeName](const Qt3DCore::QAttribute* const attribute) {
 		    return attribute && attribute->name() == vertexAttributeName;
 	    });
-	const auto indexAttributeItr = std::ranges::find_if(attributes,
-	    [indexAttributeType](const Qt3DCore::QAttribute* const attribute) {
+	const auto indexAttributeItr =
+	    std::ranges::find_if(attributes, [](const Qt3DCore::QAttribute* const attribute) {
 		    return attribute && attribute->attributeType() == indexAttributeType;
 	    });
+#else
+	using std::begin, std::end;
+
+	const auto vertexAttributeItr = std::find_if(begin(attributes), end(attributes),
+	    [&vertexAttributeName](const Qt3DCore::QAttribute* const attribute) {
+		    return attribute && attribute->name() == vertexAttributeName;
+	    });
+	const auto indexAttributeItr = std::find_if(begin(attributes), end(attributes),
+	    [](const Qt3DCore::QAttribute* const attribute) {
+		    return attribute && attribute->attributeType() == indexAttributeType;
+	    });
+#endif
 
 	if (vertexAttributeItr == attributes.end() || indexAttributeItr == attributes.end())
 	{

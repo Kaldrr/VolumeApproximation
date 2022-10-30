@@ -49,13 +49,13 @@ target_include_directories(VolumeApproximation
 )
 target_link_libraries(VolumeApproximation
     PUBLIC
-        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:tbb>
+#        $<$<NOT:$<CXX_COMPILER_ID:MSVC>>:tbb>
 )
 
 qt_finalize_executable(VolumeApproximation)
 
 add_custom_command(TARGET VolumeApproximation POST_BUILD
-  COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_RUNTIME_DLLS:VolumeApproximation> $<TARGET_FILE_DIR:VolumeApproximation>
+  COMMAND ${CMAKE_COMMAND} copy $<TARGET_RUNTIME_DLLS:VolumeApproximation> $<TARGET_FILE_DIR:VolumeApproximation>
   COMMAND_EXPAND_LISTS
 )
 

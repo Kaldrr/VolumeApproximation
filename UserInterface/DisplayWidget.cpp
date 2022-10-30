@@ -10,33 +10,14 @@
 #include <QFileDialog>
 #include <QStandardPaths>
 
-// emit macro causes issues on Linux, as <execution> uses intel TBB which has 'emit' functions inside it
-// Q_EMIT should cover this case in this file
-#undef emit
 #include <execution>
 #include <limits>
 
 #include <fmt/core.h>
 
-DisplayWidget::DisplayWidget() : DisplayWidget{nullptr}
-{
-}
-
-DisplayWidget::DisplayWidget(QWidget* parent)
-    : QWidget{parent}, m_ui{std::make_unique<Ui::DisplayWidget>()}
-{
-	m_ui->setupUi(this);
-
-	m_ui->samplesCountInput->setRange(0, std::numeric_limits<int>::max());
-
-	connect(m_ui->startButton, &QPushButton::clicked, this, &DisplayWidget::onStartButtonClick);
-	connect(m_ui->loadMeshButton, &QPushButton::clicked, this,
-	    &DisplayWidget::onLoadMeshButtonClick);
-
-#include <execution>
-#include <limits>
-
-#include <fmt/core.h>
+#if __has_cpp_attribute(__cpp_lib_execution)
+#define USE_PARALLEL_EXECUTION
+#endif
 
 DisplayWidget::DisplayWidget() : DisplayWidget{nullptr}
 {
@@ -55,7 +36,7 @@ DisplayWidget::DisplayWidget(QWidget* parent)
 
 	// m_ui->pointRadiusInput->setValue(0.05);
 	constexpr std::span executors = VolumeApproximationManager::GetAvaliableExecutors();
-	for (const auto [enumValue, name] : executors)
+	for (const auto& [enumValue, name] : executors)
 	{
 		m_ui->engineSelect->addItem(QString::fromUtf8(name.data(), name.size()),
 		    QVariant::fromValue(enumValue));
@@ -92,7 +73,7 @@ void DisplayWidget::onStartButtonClick()
 		return;
 	}
 
-    Q_EMIT volumeApproximationRequested(geometry, sampleCount);
+	emit volumeApproximationRequested(geometry, sampleCount);
 }
 
 void DisplayWidget::onLoadMeshButtonClick()
@@ -119,10 +100,17 @@ void DisplayWidget::volumeApproximationDone(const VolumeApproximation::Approxima
 	                               (points.m_maxExtent.y() - points.m_minExtent.y()) *
 	                               (points.m_maxExtent.z() - points.m_minExtent.z()) * 1'000'000.0;
 
+#ifdef USE_PARALLEL_EXECUTION
 	const std::size_t pointsHit = std::count_if(std::execution::par_unseq, begin(points.m_points),
 	    end(points.m_points), [](const VolumeApproximation::ApproximationPoint& point) {
 		    return point.m_status == VolumeApproximation::PointStatus::Inside;
 	    });
+#else
+	const std::size_t pointsHit = std::count_if(begin(points.m_points), end(points.m_points),
+	    [](const VolumeApproximation::ApproximationPoint& point) {
+		    return point.m_status == VolumeApproximation::PointStatus::Inside;
+	    });
+#endif
 
 	const double finalVolume = cubeVolume * (static_cast<long double>(pointsHit) /
 	                                            static_cast<long double>(points.m_points.size()));

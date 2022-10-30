@@ -30,8 +30,9 @@ constexpr std::string_view EnumToString(
 			return "CUDA";
 		case ApproximationExecutor::ParallelCpu:
 			return "Parallel CPU";
+		default:
+			std::unreachable();
 	}
-	std::unreachable();
 	return "";
 }
 
