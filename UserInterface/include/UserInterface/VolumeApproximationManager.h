@@ -1,6 +1,6 @@
 #pragma once
 
-#include <ApproximationLib/ApproximationHelper.h>
+#include <ApproximationLib/ApproximationHelper.hpp>
 
 #include <span>
 #include <string_view>
@@ -36,6 +36,6 @@ signals:
 	void approximationFinished(const VolumeApproximation::ApproximationResult& approximationResult);
 
 private:
-	std::unique_ptr<VolumeApproximation::IVolumeApproximationStrategy>
+	std::unique_ptr<VolumeApproximation::IVolumeApproximation>
 	    m_VolumeApproximationStrategy{};
 };

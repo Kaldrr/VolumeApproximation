@@ -10,18 +10,10 @@
 #include <QFileDialog>
 #include <QStandardPaths>
 
-#include <execution>
 #include <limits>
 #include <version>
 
 #include <fmt/core.h>
-
-#pragma warning(push)
-#pragma warning(disable : 4067)
-#ifdef __has_cpp_attribute(__cpp_lib_execution)
-#define USE_PARALLEL_EXECUTION
-#endif
-#pragma warning(pop)
 
 DisplayWidget::DisplayWidget() : DisplayWidget{nullptr}
 {
@@ -104,17 +96,10 @@ void DisplayWidget::volumeApproximationDone(const VolumeApproximation::Approxima
 	                               (points.m_maxExtent.y() - points.m_minExtent.y()) *
 	                               (points.m_maxExtent.z() - points.m_minExtent.z()) * 1'000'000.0;
 
-#ifdef USE_PARALLEL_EXECUTION
-	const std::size_t pointsHit = std::count_if(std::execution::par_unseq, begin(points.m_points),
-	    end(points.m_points), [](const VolumeApproximation::ApproximationPoint& point) {
-		    return point.m_status == VolumeApproximation::PointStatus::Inside;
-	    });
-#else
-	const std::size_t pointsHit = std::count_if(begin(points.m_points), end(points.m_points),
+	const std::size_t pointsHit = std::ranges::count_if(points.m_points,
 	    [](const VolumeApproximation::ApproximationPoint& point) {
 		    return point.m_status == VolumeApproximation::PointStatus::Inside;
 	    });
-#endif
 
 	const double finalVolume = cubeVolume * (static_cast<long double>(pointsHit) /
 	                                            static_cast<long double>(points.m_points.size()));
