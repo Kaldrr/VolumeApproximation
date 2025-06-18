@@ -7,14 +7,14 @@ namespace Ui
 class MainWindow;
 }
 
-class MainWindow : public QMainWindow
+class MainWindow final : public QMainWindow
 {
 	Q_OBJECT
 
 public:
 	MainWindow();
 	explicit MainWindow(QWidget* parent);
-	~MainWindow();
+	~MainWindow() override;
 
 private:
 	std::unique_ptr<Ui::MainWindow> m_ui;

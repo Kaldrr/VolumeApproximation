@@ -25,16 +25,16 @@ namespace Qt3DExtras
 class QAbstractCameraController;
 } // namespace Qt3DExtras
 
-class SceneContainer : public QWidget
+class SceneContainer final : public QWidget
 {
 	Q_OBJECT
 
 public:
 	SceneContainer();
 	explicit SceneContainer(QWidget* parent);
-	~SceneContainer();
+	~SceneContainer() override;
 
-	const Qt3DCore::QGeometry* getGeometry() const;
+	[[nodiscard]] const Qt3DCore::QGeometry* getGeometry() const;
 
 public slots:
 	void setMainMeshPath(const QUrl& meshFile);

@@ -15,7 +15,7 @@ class QGeometry;
 class QAttribute;
 } // namespace Qt3DCore
 
-class VolumeApproximationManager : public QObject
+class VolumeApproximationManager final : public QObject
 {
 	Q_OBJECT
 
@@ -23,7 +23,7 @@ public:
 	VolumeApproximationManager();
 	explicit VolumeApproximationManager(QObject* parent);
 
-	constexpr static auto GetAvaliableExecutors()
+	[[nodiscard]] constexpr static auto GetAvailableExecutors()
 	{
 		return std::span{VolumeApproximation::ExecutorNames};
 	}

@@ -4,7 +4,6 @@
 #include <UserInterface/VolumeApproximationManager.h>
 
 #include <QDebug>
-#include <QDir>
 #include <QDoubleSpinBox>
 #include <QFile>
 #include <QFileDialog>
@@ -15,111 +14,126 @@
 
 #include <fmt/core.h>
 
-DisplayWidget::DisplayWidget() : DisplayWidget{nullptr}
+DisplayWidget::DisplayWidget()
+    : DisplayWidget{ nullptr }
 {
 }
 
 DisplayWidget::DisplayWidget(QWidget* parent)
-    : QWidget{parent}, m_ui{std::make_unique<Ui::DisplayWidget>()}
+    : QWidget{ parent }
+    , m_Ui{ std::make_unique<Ui::DisplayWidget>() }
 {
-	m_ui->setupUi(this);
+	m_Ui->setupUi(this);
 
-	m_ui->samplesCountInput->setRange(0, std::numeric_limits<int>::max());
+	m_Ui->samplesCountInput->setRange(0, std::numeric_limits<int>::max());
 
-	connect(m_ui->startButton, &QPushButton::clicked, this, &DisplayWidget::onStartButtonClick);
-	connect(m_ui->loadMeshButton, &QPushButton::clicked, this,
-	    &DisplayWidget::onLoadMeshButtonClick);
+	connect(m_Ui->startButton, &QPushButton::clicked, this,
+	        &DisplayWidget::OnStartButtonClick);
+	connect(m_Ui->loadMeshButton, &QPushButton::clicked, this,
+	        &DisplayWidget::OnLoadMeshButtonClick);
 
-	// m_ui->pointRadiusInput->setValue(0.05);
-	constexpr std::span executors = VolumeApproximationManager::GetAvaliableExecutors();
-	for (const auto& [enumValue, name] : executors)
+	// m_Ui->pointRadiusInput->setValue(0.05);
+	for (constexpr std::span Executors =
+	         VolumeApproximationManager::GetAvailableExecutors();
+	     const auto& [enumValue, name] : Executors)
 	{
-		m_ui->engineSelect->addItem(QString::fromUtf8(name.data(), name.size()),
+		m_Ui->engineSelect->addItem(
+		    QString::fromUtf8(name.data(), static_cast<qsizetype>(name.size())),
 		    QVariant::fromValue(enumValue));
 	}
-	connect(m_ui->engineSelect, &QComboBox::currentIndexChanged, this,
-	    &DisplayWidget::onComputeEngineChanged);
+	connect(m_Ui->engineSelect, &QComboBox::currentIndexChanged, this,
+	        &DisplayWidget::OnComputeEngineChanged);
 
-	// Move worker to a sperate thread, so we don't block main ui-thread
+	// Move worker to a separate thread, so we don't block the main ui-thread
 	auto* const volumeManager = new VolumeApproximationManager{};
-	volumeManager->moveToThread(&m_workerThread);
-	connect(&m_workerThread, &QThread::finished, volumeManager, &QObject::deleteLater);
-	connect(this, &DisplayWidget::volumeApproximationRequested, volumeManager,
-	    &VolumeApproximationManager::geometryVolumeRequested);
+	volumeManager->moveToThread(&m_WorkerThread);
+	connect(&m_WorkerThread, &QThread::finished, volumeManager,
+	        &QObject::deleteLater);
+	connect(this, &DisplayWidget::VolumeApproximationRequested, volumeManager,
+	        &VolumeApproximationManager::geometryVolumeRequested);
 	connect(volumeManager, &VolumeApproximationManager::approximationFinished, this,
-	    &DisplayWidget::volumeApproximationDone);
-	connect(this, &DisplayWidget::computeEngineRequestd, volumeManager,
-	    &VolumeApproximationManager::SetStrategy);
-	m_workerThread.start();
+	        &DisplayWidget::VolumeApproximationDone);
+	connect(this, &DisplayWidget::ComputeEngineRequested, volumeManager,
+	        &VolumeApproximationManager::SetStrategy);
+	m_WorkerThread.start();
 }
 
-void DisplayWidget::onStartButtonClick()
+void DisplayWidget::OnStartButtonClick()
 {
-	const Qt3DCore::QGeometry* const geometry = m_ui->sceneContainer->getGeometry();
+	const Qt3DCore::QGeometry* const geometry = m_Ui->sceneContainer->getGeometry();
 	if (geometry == nullptr)
 	{
 		qDebug() << "Can't approximate volume of nullptr geometry...";
 		return;
 	}
 
-	const int sampleCount = m_ui->samplesCountInput->value();
+	const int sampleCount = m_Ui->samplesCountInput->value();
 	if (sampleCount <= 0)
 	{
 		qDebug() << "Need at least 1 point when calculating volume...";
 		return;
 	}
 
-	emit volumeApproximationRequested(geometry, sampleCount);
+	emit VolumeApproximationRequested(geometry, sampleCount);
 }
 
-void DisplayWidget::onLoadMeshButtonClick()
+void DisplayWidget::OnLoadMeshButtonClick()
 {
 	const QString homeDirectory = QDir::homePath();
-	QFileDialog fileDialog{this, "Mesh file", homeDirectory};
+	QFileDialog fileDialog{ this, "Mesh file", homeDirectory };
 	fileDialog.setFileMode(QFileDialog::ExistingFile);
 	fileDialog.setViewMode(QFileDialog::Detail);
-	if (fileDialog.exec())
+	if (fileDialog.exec() == QDialog::Accepted)
 	{
-		const QList<QUrl> selectedFiles = fileDialog.selectedUrls();
-		if (!selectedFiles.empty())
+		if (const QList<QUrl> selectedFiles = fileDialog.selectedUrls();
+		    !selectedFiles.empty())
 		{
 			assert(selectedFiles.size() == 1);
-			m_ui->sceneContainer->setMainMeshPath(selectedFiles.front());
+			m_Ui->sceneContainer->setMainMeshPath(selectedFiles.front());
 		}
 	}
 }
 
-void DisplayWidget::volumeApproximationDone(const VolumeApproximation::ApproximationResult& points)
+void DisplayWidget::VolumeApproximationDone(
+    const VolumeApproximation::ApproximationResult& approximationResult)
 {
-	// Get volume of cube that contains the entire mesh in cm3
-	const long double cubeVolume = (points.m_maxExtent.x() - points.m_minExtent.x()) *
-	                               (points.m_maxExtent.y() - points.m_minExtent.y()) *
-	                               (points.m_maxExtent.z() - points.m_minExtent.z()) * 1'000'000.0;
+	const VolumeApproximation::Vector3F minExtent = approximationResult.MinExtent;
+	const VolumeApproximation::Vector3F maxExtent = approximationResult.MaxExtent;
 
-	const std::size_t pointsHit = std::ranges::count_if(points.m_points,
+	// Get volume of cube that contains the entire mesh in cm3
+	const long double cubeVolume = (maxExtent.X() - minExtent.X()) *
+	                               (maxExtent.Y() - minExtent.Y()) *
+	                               (maxExtent.Z() - minExtent.Z()) * 1'000'000.0;
+
+	const std::size_t pointsHit = std::ranges::count_if(
+	    approximationResult.Points,
 	    [](const VolumeApproximation::ApproximationPoint& point) {
-		    return point.m_status == VolumeApproximation::PointStatus::Inside;
+		    return point.Status == VolumeApproximation::PointStatus::Inside;
 	    });
 
-	const double finalVolume = cubeVolume * (static_cast<long double>(pointsHit) /
-	                                            static_cast<long double>(points.m_points.size()));
+	const long double finalVolume =
+	    cubeVolume * (static_cast<long double>(pointsHit) /
+	                  static_cast<long double>(approximationResult.Points.size()));
 
 	fmt::print("Mesh volume: {} cm3\n", finalVolume);
 }
 
-void DisplayWidget::onComputeEngineChanged(int newIndex)
+void DisplayWidget::OnComputeEngineChanged(int newIndex)
 {
 	if (newIndex == -1)
+	{
 		return;
+	}
 
-	const QVariant enumVariant = m_ui->engineSelect->itemData(newIndex);
-	const auto executor = enumVariant.value<VolumeApproximation::ApproximationExecutor>();
+	const QVariant enumVariant = m_Ui->engineSelect->itemData(newIndex);
+	const auto executor =
+	    enumVariant.value<VolumeApproximation::ApproximationExecutor>();
 
-	emit computeEngineRequestd(executor);
+	emit ComputeEngineRequested(executor);
 }
 
 DisplayWidget::~DisplayWidget()
 {
-	m_workerThread.quit();
-	m_workerThread.wait();
+	m_WorkerThread.quit();
+	m_WorkerThread.wait();
 }

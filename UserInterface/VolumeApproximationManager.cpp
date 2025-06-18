@@ -1,12 +1,10 @@
 #include <UserInterface/VolumeApproximationManager.h>
 
-#include <Qt3DCore/QAttribute>
 #include <Qt3DCore/QGeometry>
 
 #include <algorithm>
 #include <cassert>
 #include <random>
-#include <string_view>
 
 #include <fmt/format.h>
 
@@ -14,8 +12,7 @@ using VolumeApproximation::Vector3F;
 
 namespace
 {
-
-std::vector<VolumeApproximation::Vector3F> getVertices(const Qt3DCore::QAttribute& vertexAttribute)
+std::vector<Vector3F> getVertices(const Qt3DCore::QAttribute& vertexAttribute)
 {
 	assert(vertexAttribute.vertexBaseType() == Qt3DCore::QAttribute::Float);
 	static_assert(sizeof(Vector3F) == sizeof(std::array<float, 3>));
@@ -34,7 +31,6 @@ std::vector<VolumeApproximation::Vector3F> getVertices(const Qt3DCore::QAttribut
 		Vector3F& vertex = vertices.emplace_back();
 		std::memcpy(&vertex, vertexPtr, sizeof(Vector3F));
 	}
-
 	return vertices;
 }
 
@@ -69,7 +65,6 @@ std::vector<VolumeApproximation::Triangle> getGeometryTriangles(const Qt3DCore::
 	constexpr Qt3DCore::QAttribute::AttributeType indexAttributeType =
 	    Qt3DCore::QAttribute::AttributeType::IndexAttribute;
 
-
 	const auto vertexAttributeItr = std::ranges::find_if(attributes,
 	    [&vertexAttributeName](const Qt3DCore::QAttribute* const attribute) {
 		    return attribute && attribute->name() == vertexAttributeName;
@@ -91,19 +86,17 @@ std::vector<VolumeApproximation::Triangle> getGeometryTriangles(const Qt3DCore::
 	assert(indexes.size() % 3 == 0);
 
 	std::vector<VolumeApproximation::Triangle> triangles{};
-
 	for (std::size_t i = 0; i < indexes.size(); i += 3)
 	{
 		triangles.push_back(
 		    {vertices[indexes[i]], vertices[indexes[i + 1]], vertices[indexes[i + 2]]});
 	}
-
 	return triangles;
 }
 
-std::vector<VolumeApproximation::Vector3F> generateRandomPoints(const int count,
-    const VolumeApproximation::Vector3F& minExtent,
-    const VolumeApproximation::Vector3F& maxExtent)
+std::vector<Vector3F> generateRandomPoints(const int count,
+    const Vector3F& minExtent,
+    const Vector3F& maxExtent)
 {
 	std::vector<Vector3F> randomPoints{};
 	randomPoints.reserve(count);
@@ -115,9 +108,8 @@ std::vector<VolumeApproximation::Vector3F> generateRandomPoints(const int count,
 
 	for (int i = 0; i < count; ++i)
 	{
-		randomPoints.push_back({rngX(dev), rngY(dev), rngZ(dev)});
+		randomPoints.emplace_back(rngX(dev), rngY(dev), rngZ(dev));
 	}
-
 	return randomPoints;
 }
 } // namespace

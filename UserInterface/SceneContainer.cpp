@@ -33,7 +33,7 @@ SceneContainer::SceneContainer() : SceneContainer{nullptr} {};
 SceneContainer::SceneContainer(QWidget* const parent)
     : QWidget{parent}
     , m_ui{std::make_unique<Ui::SceneContainer>()}
-    , m_3dWindow{nullptr, Qt3DRender::API::Vulkan}
+    , m_3dWindow{nullptr, Qt3DRender::API::RHI}
     , m_rootEntity{std::make_unique<Qt3DCore::QEntity>()}
     , m_cameraController{std::make_unique<Qt3DExtras::QOrbitCameraController>(m_rootEntity.get())}
 {

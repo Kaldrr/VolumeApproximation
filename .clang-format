@@ -3,6 +3,7 @@ Standard: c++20
 
 BreakBeforeBinaryOperators: None
 BreakBeforeBraces: Custom
+PackConstructorInitializers: Never
 BraceWrapping:
   AfterCaseLabel: true
   AfterClass: true
@@ -20,45 +21,64 @@ BraceWrapping:
   SplitEmptyNamespace: true
   IndentBraces: false
 
-AlwaysBreakTemplateDeclarations: true
+BreakTemplateDeclarations: Yes
 AlwaysBreakBeforeMultilineStrings: true
 
 BinPackArguments: true
 BinPackParameters: false
 
-AlignAfterOpenBracket: DontAlign
+AlignAfterOpenBracket: Align
 AlignConsecutiveMacros: false 
 AlignConsecutiveDeclarations: false 
 AlignEscapedNewlines: DontAlign
+AlignConsecutiveAssignments:
+  Enabled: true
+
 
 AlignOperands: true
 AllowAllParametersOfDeclarationOnNextLine: false
-AllowShortBlocksOnASingleLine: false
+AllowShortBlocksOnASingleLine: Empty
 AllowShortCaseLabelsOnASingleLine: false
 AllowShortFunctionsOnASingleLine: InlineOnly
 AllowShortIfStatementsOnASingleLine: false
 AllowShortLoopsOnASingleLine: false
-AllowShortLambdasOnASingleLine: false 
+AllowShortLambdasOnASingleLine: Empty
 AllowAllArgumentsOnNextLine: false
 
 BreakConstructorInitializers: BeforeComma
 BreakInheritanceList: BeforeComma
 BreakStringLiterals: false
-ColumnLimit: 100
+ColumnLimit: 84
 CompactNamespaces: false
 ConstructorInitializerAllOnOneLineOrOnePerLine: true
 PointerAlignment: Left
 DerivePointerAlignment: false
 FixNamespaceComments: true
-
-Cpp11BracedListStyle: true
-
-SpaceBeforeCpp11BracedList: false
-SpaceBeforeCtorInitializerColon: true
-
+ForEachMacros:
+  - foreach
+  - Q_FOREACH
+  - BOOST_FOREACH
 IncludeBlocks: Preserve
 SortIncludes: true
 SortUsingDeclarations: true
+IncludeCategories:
+  # Standard library headers come before anything else
+  - Regex: '^<[a-z_]+>'
+    Priority: -1
+  - Regex: '^<.+\.h(pp)?>'
+    Priority: 1
+  - Regex: '^<.*'
+    Priority: 2
+  - Regex: '.*'
+    Priority: 3
+IncludeIsMainRegex: ''
+IncludeIsMainSourceRegex: ''
+
+Cpp11BracedListStyle: false
+
+SpaceBeforeCpp11BracedList: false
+SpaceBeforeCtorInitializerColon: true
+SpaceBeforeAssignmentOperators: true
 
 IndentCaseLabels: true
 IndentPPDirectives: None
