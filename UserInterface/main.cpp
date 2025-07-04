@@ -1,28 +1,40 @@
-#include <QApplication>
-
-#include <UserInterface/MainWindow.h>
+#include <QGuiApplication>
+#include <QQmlApplicationEngine>
 
 #include <Qt3DCore/QGeometry>
 
 #include <fmt/core.h>
 
-void RegisterMetatypes()
+namespace
 {
-	qRegisterMetaType<Qt3DCore::QGeometry*>();
-	qRegisterMetaType<const Qt3DCore::QGeometry*>();
-}
+// void RegisterMetatypes()
+// {
+// 	qRegisterMetaType<Qt3DCore::QGeometry*>();
+// 	qRegisterMetaType<const Qt3DCore::QGeometry*>();
+// }
+} // namespace
 
 int main(int argc, char** argv)
 {
 #ifndef NDEBUG
 	fmt::print("Executing in debug mode\n");
 #endif
-	RegisterMetatypes();
 
-	QApplication app{argc, argv};
+	/*
+	 * TODO: Instanced rendering https://doc.qt.io/qt-6/qquick3dinstancing.html
+	 * https://doc.qt.io/qt-6/qml-qtquick3d-model.html
+	 */
 
-	MainWindow mainWindow{};
-	mainWindow.show();
+	const QGuiApplication app{ argc, argv };
 
-	return QApplication::exec();
+	QQmlApplicationEngine engine{};
+	QObject::connect(
+	    &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
+	    []() {
+		    QCoreApplication::exit(-1);
+	    },
+	    Qt::QueuedConnection);
+	engine.loadFromModule("UserInterface", "MainWindow");
+
+	return QGuiApplication::exec();
 }

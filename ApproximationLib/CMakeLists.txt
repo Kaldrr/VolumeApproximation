@@ -1,8 +1,12 @@
+find_package(fmt REQUIRED)
+
 set(CUDA_ENABLED
     ON
     CACHE BOOL "Enable CUDA backend")
 
 if(CUDA_ENABLED)
+  # Ugly hack :( but CUDA complains about gcc-15 for now
+  set(CMAKE_CUDA_HOST_COMPILER "gcc-14")
   enable_language(CUDA)
   if(NOT DEFINED CMAKE_CUDA_STANDARD)
     set(CMAKE_CUDA_STANDARD 20)
@@ -27,7 +31,7 @@ set(SOURCE_FILES
 
 add_library(ApproximationLib SHARED ${HEADER_FILES} ${SOURCE_FILES}
                                     ${CUDA_SOURCES})
-target_link_libraries(ApproximationLib PRIVATE tbb)
+target_link_libraries(ApproximationLib PRIVATE tbb fmt::fmt)
 target_include_directories(
   ApproximationLib PUBLIC include VolumeApproximation_project_warnings
                           VolumeApproximation_project_options)
