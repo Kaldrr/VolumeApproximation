@@ -7,12 +7,15 @@ import QtQuick.Layouts
 import QtQuick3D.Helpers
 import QtQuick.Controls 2.15
 import QtQuick.Dialogs
+import QtQuick.Controls.Universal
 
-Window {
-    width: 640
-    height: 480
+ApplicationWindow {
+    width: 1920
+    height: 1080
     visible: true
-    title: qsTr("Hello World")
+    title: qsTr("Volume Approximation")
+    Universal.theme: Universal.Light
+    Universal.accent: Universal.Violet
 
     RowLayout {
         anchors.fill: parent
@@ -26,14 +29,13 @@ Window {
             Layout.preferredWidth: parent.width * 0.8
             camera: sceneCamera
             focus: true
-            // onFocus: {
-            //     print("View3D focused")
-            // }
 
             SceneEnvironment {
                 id: sceneEnvironment
                 antialiasingMode: SceneEnvironment.MSAA
                 antialiasingQuality: SceneEnvironment.High
+                backgroundMode: SceneEnvironment.Color
+                clearColor: "#ffffff"
             }
 
             OrbitCameraController {

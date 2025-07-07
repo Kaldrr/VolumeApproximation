@@ -6,6 +6,7 @@
 #include <fmt/core.h>
 
 #include <QQuick3DGeometry>
+#include <QQuickStyle>
 
 namespace
 {
@@ -35,6 +36,7 @@ int main(int argc, char** argv) noexcept
 	try
 	{
 		const QGuiApplication app{ argc, argv };
+		QQuickStyle::setStyle(QStringLiteral("Universal"));
 
 		QQmlApplicationEngine engine{};
 		QObject::connect(
