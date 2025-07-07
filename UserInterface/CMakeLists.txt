@@ -3,16 +3,17 @@ find_package(
       COMPONENTS Core Quick Concurrent Quick3D QuickControls2
   REQUIRED)
 find_package(fmt REQUIRED)
+find_package(assimp REQUIRED)
 
 qt_standard_project_setup(REQUIRES 6.9)
 
 set(HEADER_FILES
-        SceneController.hpp
+        SceneController.hpp CustomGeometry.hpp
 )
 
 set(SOURCE_FILES
     main.cpp
-        SceneController.cpp
+        SceneController.cpp CustomGeometry.cpp
 )
 
 qt_add_executable(VolumeApproximation ${HEADER_FILES}
@@ -36,6 +37,9 @@ qt_add_qml_module(VolumeApproximation
 target_link_libraries(
   VolumeApproximation PRIVATE
         ApproximationLib
+        VolumeApproximation_project_warnings
+        VolumeApproximation_project_options
+        assimp::assimp
         fmt::fmt
         Qt6::Core Qt6::Concurrent
         Qt6::Quick3D Qt6::Quick Qt6::QuickControls2)

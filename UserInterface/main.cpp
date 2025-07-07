@@ -5,36 +5,56 @@
 
 #include <fmt/core.h>
 
+#include <QQuick3DGeometry>
+
 namespace
 {
-// void RegisterMetatypes()
-// {
-// 	qRegisterMetaType<Qt3DCore::QGeometry*>();
-// 	qRegisterMetaType<const Qt3DCore::QGeometry*>();
-// }
+[[maybe_unused]]
+void RegisterMetatypes()
+{
+	qRegisterMetaType<QQuick3DGeometry>();
+	qRegisterMetaType<const QQuick3DGeometry>();
+	qRegisterMetaType<QQuick3DGeometry*>();
+	qRegisterMetaType<const QQuick3DGeometry*>();
+	qRegisterMetaType<const QQuick3DGeometry&>();
+}
 } // namespace
 
-int main(int argc, char** argv)
+int main(int argc, char** argv) noexcept
 {
 #ifndef NDEBUG
 	fmt::print("Executing in debug mode\n");
 #endif
-
 	/*
-	 * TODO: Instanced rendering https://doc.qt.io/qt-6/qquick3dinstancing.html
+	 * TODO:
+	 * Instanced rendering https://doc.qt.io/qt-6/qquick3dinstancing.html
 	 * https://doc.qt.io/qt-6/qml-qtquick3d-model.html
+	 * QtQuick3D
 	 */
 
-	const QGuiApplication app{ argc, argv };
+	try
+	{
+		const QGuiApplication app{ argc, argv };
 
-	QQmlApplicationEngine engine{};
-	QObject::connect(
-	    &engine, &QQmlApplicationEngine::objectCreationFailed, &app,
-	    []() {
-		    QCoreApplication::exit(-1);
-	    },
-	    Qt::QueuedConnection);
-	engine.loadFromModule("UserInterface", "MainWindow");
+		QQmlApplicationEngine engine{};
+		QObject::connect(
+		    &engine, &QQmlApplicationEngine::objectCreationFailed,
+		    &app, [] {
+			    QCoreApplication::exit(-1);
+		    },
+		    Qt::QueuedConnection);
+		engine.loadFromModule(QStringLiteral("UserInterface"),
+		                      QStringLiteral("MainWindow"));
 
-	return QGuiApplication::exec();
+		return QGuiApplication::exec();
+	}
+	catch (const std::exception& e)
+	{
+		fmt::print(stderr, "Exception: {}\n", e.what());
+	}
+	catch (...)
+	{
+		fmt::print(stderr, "Unknown exception caught\n");
+	}
+	return -1;
 }

@@ -28,7 +28,7 @@
 
 using namespace std::chrono_literals;
 
-SceneContainer::SceneContainer() : SceneContainer{nullptr} {};
+SceneContainer::SceneContainer() : SceneContainer{nullptr} {}
 
 SceneContainer::SceneContainer(QWidget* const parent)
     : QWidget{parent}

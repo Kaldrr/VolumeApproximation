@@ -1,10 +1,12 @@
 import UserInterface
 
+import QtCore
 import QtQuick
 import QtQuick3D
 import QtQuick.Layouts
 import QtQuick3D.Helpers
 import QtQuick.Controls 2.15
+import QtQuick.Dialogs
 
 Window {
     width: 640
@@ -60,7 +62,7 @@ Window {
                     eulerRotation.y: 45
                     eulerRotation.x: 30
                     materials: defaultMaterial
-                    source: "#Cube"
+                    geometry: sceneController.mainModel
                 }
             }
         }
@@ -79,9 +81,7 @@ Window {
                     Layout.fillWidth: true
 
                     text: qsTr("Load mesh")
-                    onClicked: {
-                        sceneController.onLoadMeshButtonPress()
-                    }
+                    onClicked: fileDialog.open()
                 }
                 Label {
                     Layout.alignment: Qt.AlignHCenter
@@ -132,6 +132,12 @@ Window {
 
     SceneController {
         id: sceneController
+        mainModel: CuboidGeometry {
+            id: cuboidGeometry
+            xExtent: 100
+            yExtent: 100
+            zExtent: 100
+        }
     }
 
     Item {
@@ -140,6 +146,14 @@ Window {
             id: defaultMaterial
             objectName: "Default Material"
             baseColor: "#4aee45"
+        }
+    }
+
+    FileDialog {
+        id: fileDialog
+        currentFolder: StandardPaths.standardLocations(StandardPaths.PicturesLocation)[0]
+        onAccepted: {
+            sceneController.onLoadMeshButtonPress(selectedFile)
         }
     }
 }
