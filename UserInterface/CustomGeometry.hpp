@@ -2,6 +2,8 @@
 
 #include <QQuick3DGeometry>
 
+class aiMesh;
+
 class CustomGeometry : public QQuick3DGeometry
 {
 	Q_OBJECT
@@ -19,6 +21,7 @@ public:
 	CustomGeometry& operator=(const CustomGeometry&)     = delete;
 	CustomGeometry& operator=(CustomGeometry&&) noexcept = delete;
 
-
 private:
+	void SetupVertexData(const aiMesh& mesh);
+	void SetupIndexData(const aiMesh& mesh);
 };

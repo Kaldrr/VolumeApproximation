@@ -1,3 +1,6 @@
+// The style must be imported before any other QtQuick.Controls imports.
+import QtQuick.Controls.Universal
+
 import UserInterface
 
 import QtCore
@@ -7,7 +10,6 @@ import QtQuick.Layouts
 import QtQuick3D.Helpers
 import QtQuick.Controls 2.15
 import QtQuick.Dialogs
-import QtQuick.Controls.Universal
 
 ApplicationWindow {
     width: 1920
@@ -75,18 +77,23 @@ ApplicationWindow {
             Layout.fillHeight: true
             Layout.alignment: Qt.AlignRight
             Layout.maximumWidth: 200
+            background: Rectangle {
+                color: "#f0f0f0"
+            }
 
             ColumnLayout {
-                anchors.fill: parent
+                spacing: 20
+                anchors.verticalCenter: parent.verticalCenter
+                Layout.alignment: Qt.AlignVCenter
+
+
                 Button {
-                    Layout.alignment: Qt.AlignHCenter
                     Layout.fillWidth: true
 
                     text: qsTr("Load mesh")
                     onClicked: fileDialog.open()
                 }
                 Label {
-                    Layout.alignment: Qt.AlignHCenter
                     Layout.fillWidth: true
 
                     text: qsTr("Sample count")
@@ -94,7 +101,6 @@ ApplicationWindow {
                 TextField {
                     id: sampleCountField
                     Layout.fillWidth: true
-                    Layout.alignment: Qt.AlignHCenter
 
                     text: "1000"
                     validator: IntValidator {
@@ -103,7 +109,6 @@ ApplicationWindow {
                 }
 
                 Label {
-                    Layout.alignment: Qt.AlignHCenter
                     Layout.fillWidth: true
 
                     text: qsTr("Compute engine")
@@ -111,7 +116,6 @@ ApplicationWindow {
 
                 ComboBox {
                     id: engineSelection
-                    Layout.alignment: Qt.AlignHCenter
                     Layout.fillWidth: true
 
                     model: sceneController.availableComputeEngines
@@ -119,7 +123,7 @@ ApplicationWindow {
                 }
 
                 Button {
-                    Layout.alignment: Qt.AlignHCenter
+                    // Layout.alignment: Qt.AlignHCenter
                     Layout.fillWidth: true
 
                     text: qsTr("Calculate")
@@ -148,11 +152,13 @@ ApplicationWindow {
             id: defaultMaterial
             objectName: "Default Material"
             baseColor: "#4aee45"
+            baseColorMap: sceneController.modelTexture
         }
     }
 
     FileDialog {
         id: fileDialog
+
         currentFolder: StandardPaths.standardLocations(StandardPaths.PicturesLocation)[0]
         onAccepted: {
             sceneController.onLoadMeshButtonPress(selectedFile)

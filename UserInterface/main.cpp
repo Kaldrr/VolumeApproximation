@@ -32,7 +32,6 @@ int main(int argc, char** argv) noexcept
 	 * https://doc.qt.io/qt-6/qml-qtquick3d-model.html
 	 * QtQuick3D
 	 */
-
 	try
 	{
 		const QGuiApplication app{ argc, argv };
