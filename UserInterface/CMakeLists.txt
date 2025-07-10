@@ -34,11 +34,15 @@ qt_add_qml_module(VolumeApproximation
         #NO_GENERATE_EXTRA_QMLDIRS
 )
 
+# TODO: VolumeApproximation_project_options
+# Can't be set in CUDA right now
+# But if we set it here, WEIRD things happen
+# Like cudaGetDeviceCount returning outOfMemory errors
 target_link_libraries(
   VolumeApproximation PRIVATE
         ApproximationLib
         VolumeApproximation_project_warnings
-        VolumeApproximation_project_options
+
         assimp::assimp
         fmt::fmt
         Qt6::Core Qt6::Concurrent

@@ -121,7 +121,7 @@ void CustomGeometry::SetupIndexData(const aiMesh& mesh)
 		const std::span<const std::uint32_t> indices{ face.mIndices,
 			                                          face.mNumIndices };
 		// TODO: std::memcpy instead?
-		m_IndexData.append_range(indices);
+		m_IndexData.insert(m_IndexData.end(), indices.begin(), indices.end());
 	}
 	assert(m_IndexData.size() == requiredSize);
 	const QByteArray indexData{ ToByteArray(std::span{ m_IndexData }) };

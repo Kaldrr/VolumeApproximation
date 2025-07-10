@@ -1,25 +1,9 @@
 #include <QGuiApplication>
 #include <QQmlApplicationEngine>
-
-#include <Qt3DCore/QGeometry>
-
-#include <fmt/core.h>
-
 #include <QQuick3DGeometry>
 #include <QQuickStyle>
 
-namespace
-{
-[[maybe_unused]]
-void RegisterMetatypes()
-{
-	qRegisterMetaType<QQuick3DGeometry>();
-	qRegisterMetaType<const QQuick3DGeometry>();
-	qRegisterMetaType<QQuick3DGeometry*>();
-	qRegisterMetaType<const QQuick3DGeometry*>();
-	qRegisterMetaType<const QQuick3DGeometry&>();
-}
-} // namespace
+#include <fmt/core.h>
 
 int main(int argc, char** argv) noexcept
 {
