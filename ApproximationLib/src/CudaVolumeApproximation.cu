@@ -103,8 +103,11 @@ bool CudaVolumeApproximation::IsAvailable() const noexcept
 {
 	// Should be available if we have at least one device
 	int devicesCount{};
-	if (cudaGetDeviceCount(&devicesCount) != cudaError_t::cudaSuccess)
+	if (const cudaError_t status = cudaGetDeviceCount(&devicesCount);
+		status != cudaError_t::cudaSuccess)
 	{
+		fmt::print("Failed to get cuda devices count: {}\n",
+		           cudaGetErrorString(status));
 		return false;
 	}
 	return devicesCount > 0;

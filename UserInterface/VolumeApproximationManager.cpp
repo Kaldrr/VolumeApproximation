@@ -94,24 +94,7 @@ std::vector<VolumeApproximation::Triangle> getGeometryTriangles(const Qt3DCore::
 	return triangles;
 }
 
-std::vector<Vector3F> generateRandomPoints(const int count,
-    const Vector3F& minExtent,
-    const Vector3F& maxExtent)
-{
-	std::vector<Vector3F> randomPoints{};
-	randomPoints.reserve(count);
 
-	std::mt19937_64 dev{std::random_device{}()};
-	std::uniform_real_distribution<float> rngX{minExtent[0], maxExtent[0]};
-	std::uniform_real_distribution<float> rngY{minExtent[1], maxExtent[1]};
-	std::uniform_real_distribution<float> rngZ{minExtent[2], maxExtent[2]};
-
-	for (int i = 0; i < count; ++i)
-	{
-		randomPoints.emplace_back(rngX(dev), rngY(dev), rngZ(dev));
-	}
-	return randomPoints;
-}
 } // namespace
 
 VolumeApproximationManager::VolumeApproximationManager() : VolumeApproximationManager{nullptr}

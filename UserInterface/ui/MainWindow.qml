@@ -45,8 +45,6 @@ ApplicationWindow {
                 camera: sceneCamera
                 origin: scene
                 enabled: true
-                // minimumDistance: 100
-                // maximumDistance: 500
             }
 
             Node {
@@ -71,7 +69,6 @@ ApplicationWindow {
             }
         }
 
-
         Pane {
             id: toolbar
             Layout.fillHeight: true
@@ -86,18 +83,25 @@ ApplicationWindow {
                 anchors.verticalCenter: parent.verticalCenter
                 Layout.alignment: Qt.AlignVCenter
 
-
                 Button {
                     Layout.fillWidth: true
 
                     text: qsTr("Load mesh")
                     onClicked: fileDialog.open()
                 }
+
+                Button {
+                    Layout.fillWidth: true
+                    text: qsTr("Load texture")
+                    onClicked: textureFileDialog.open()
+                }
+
                 Label {
                     Layout.fillWidth: true
 
                     text: qsTr("Sample count")
                 }
+
                 TextField {
                     id: sampleCountField
                     Layout.fillWidth: true
@@ -117,9 +121,11 @@ ApplicationWindow {
                 ComboBox {
                     id: engineSelection
                     Layout.fillWidth: true
-
                     model: sceneController.availableComputeEngines
                     currentIndex: 0
+                    onActivated: {
+                        sceneController.onComputeEngineChanged(currentIndex)
+                    }
                 }
 
                 Button {
@@ -128,13 +134,12 @@ ApplicationWindow {
 
                     text: qsTr("Calculate")
                     onClicked: {
-                        sceneController.onCalculateButtonPress(engineSelection.currentIndex)
+                        sceneController.onCalculateButtonPress(sampleCountField.text, engineSelection.currentIndex)
                     }
                 }
             }
         }
     }
-
 
     SceneController {
         id: sceneController
@@ -152,16 +157,26 @@ ApplicationWindow {
             id: defaultMaterial
             objectName: "Default Material"
             baseColor: "#4aee45"
-            baseColorMap: sceneController.modelTexture
+            baseColorMap: Texture {
+                id: defaultTexture
+            }
         }
     }
 
     FileDialog {
         id: fileDialog
-
         currentFolder: StandardPaths.standardLocations(StandardPaths.PicturesLocation)[0]
         onAccepted: {
             sceneController.onLoadMeshButtonPress(selectedFile)
+        }
+    }
+
+    FileDialog {
+        id: textureFileDialog
+        currentFolder: StandardPaths.standardLocations(StandardPaths.PicturesLocation)[0]
+        onAccepted: {
+            defaultMaterial.baseColor = "#ffffff"
+            defaultTexture.source = selectedFile
         }
     }
 }

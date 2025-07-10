@@ -6,7 +6,7 @@ set(CUDA_ENABLED
 
 if(CUDA_ENABLED)
   # Ugly hack :( but CUDA complains about gcc-15 for now
-  set(CMAKE_CUDA_HOST_COMPILER "gcc-14")
+  set(CMAKE_CUDA_HOST_COMPILER "g++-14")
   enable_language(CUDA)
   if(NOT DEFINED CMAKE_CUDA_STANDARD)
     set(CMAKE_CUDA_STANDARD 20)
@@ -39,8 +39,6 @@ target_compile_definitions(ApproximationLib PRIVATE APPROXIMATION_LIBRARY)
 if(CUDA_ENABLED)
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr")
   target_compile_definitions(ApproximationLib PUBLIC CUDA_ENABLED)
-  set_target_properties(ApproximationLib PROPERTIES CUDA_SEPARABLE_COMPILATION
-                                                    ON CUDA_ARCHITECTURES "89")
-  target_include_directories(ApproximationLib
-                             PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
+  set_target_properties(ApproximationLib PROPERTIES CUDA_SEPARABLE_COMPILATION ON CUDA_ARCHITECTURES "89")
+  target_include_directories(ApproximationLib PRIVATE ${CMAKE_CUDA_TOOLKIT_INCLUDE_DIRECTORIES})
 endif()

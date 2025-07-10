@@ -1,6 +1,6 @@
 #pragma once
 
-#include <QtQml/qqmlregistration.h>
+#include <ApproximationLib/ICpuVolumeApproximation.hpp>
 
 #include <QObject>
 #include <QQuick3DGeometry>
@@ -18,14 +18,14 @@ class SceneController : public QObject
 public:
 	SceneController();
 	explicit SceneController(QObject* parent);
-	~SceneController() override = default;
+	~SceneController() noexcept override;
 
 	SceneController(const SceneController&)                = delete;
 	SceneController(SceneController&&) noexcept            = delete;
 	SceneController& operator=(const SceneController&)     = delete;
 	SceneController& operator=(SceneController&&) noexcept = delete;
 
-	[[nodiscard]] const QList<QString>& availableComputeEngines() noexcept
+	[[nodiscard]] const QList<QString>& availableComputeEngines() const noexcept
 	{
 		return m_AvailableComputeEngines;
 	}
@@ -43,9 +43,12 @@ signals:
 
 public slots:
 	void onLoadMeshButtonPress(const QUrl& filePath);
-	void onCalculateButtonPress(int index);
+	void onCalculateButtonPress(const QString& pointsCountInput, int index);
+	void onComputeEngineChanged(int index);
 
 private:
 	QList<QString> m_AvailableComputeEngines;
 	QQuick3DGeometry* m_Geometry{ nullptr };
+	std::unique_ptr<VolumeApproximation::IVolumeApproximation>
+	    m_VolumeApproximation{};
 };
