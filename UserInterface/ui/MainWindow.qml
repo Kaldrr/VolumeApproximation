@@ -134,7 +134,7 @@ ApplicationWindow {
 
                     text: qsTr("Calculate")
                     onClicked: {
-                        sceneController.onCalculateButtonPress(sampleCountField.text, engineSelection.currentIndex)
+                        sceneController.onCalculateButtonPress(sampleCountField.text)
                     }
                 }
             }

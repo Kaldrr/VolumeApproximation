@@ -43,12 +43,12 @@ signals:
 
 public slots:
 	void onLoadMeshButtonPress(const QUrl& filePath);
-	void onCalculateButtonPress(const QString& pointsCountInput, int index);
+	void onCalculateButtonPress(const QString& pointsCountInput);
 	void onComputeEngineChanged(int index);
 
 private:
 	QList<QString> m_AvailableComputeEngines;
 	QQuick3DGeometry* m_Geometry{ nullptr };
-	std::unique_ptr<VolumeApproximation::IVolumeApproximation>
-	    m_VolumeApproximation{};
+	std::shared_ptr<VolumeApproximation::IVolumeApproximation>
+	    m_VolumeApproximation;
 };

@@ -9,6 +9,7 @@
 
 #include <fmt/core.h>
 
+#include <QThreadPool>
 #include <QVector3D>
 
 namespace
@@ -135,55 +136,73 @@ void SceneController::onLoadMeshButtonPress(const QUrl& filePath)
 	}
 }
 
-void SceneController::onCalculateButtonPress(const QString& pointsCountInput,
-                                             const int index)
+void SceneController::onCalculateButtonPress(const QString& pointsCountInput)
 {
-	try
+	if (!m_VolumeApproximation->IsAvailable())
 	{
-		fmt::println("CalculateButton pressed in SceneView: {}!",
-		             m_AvailableComputeEngines.at(index).toStdString());
+		fmt::print(stderr, "Volume approximation engine is not available.\n");
+		return;
+	}
+	const auto* const geometry{ qobject_cast<CustomGeometry*>(m_Geometry) };
+	if (geometry == nullptr)
+	{
+		fmt::print(stderr,
+		           "Can't approximate default model, load a model first.\n");
+		return;
+	}
 
-		if (!m_VolumeApproximation->IsAvailable())
+	QThreadPool::globalInstance()->start([geometry,
+	                                      executor = m_VolumeApproximation,
+	                                      pointsCount =
+	                                          pointsCountInput.toULongLong()] {
+		try
 		{
-			fmt::print(stderr, "Volume approximation engine is not available.\n");
-			return;
-		}
+			const QVector3D minExtentQt{ geometry->boundsMin() };
+			const VolumeApproximation::Vector3F minimumExtent{ minExtentQt.x(),
+				                                               minExtentQt.y(),
+				                                               minExtentQt.z() };
+			const QVector3D maxExtentQt{ geometry->boundsMax() };
+			const VolumeApproximation::Vector3F maximumExtent{ maxExtentQt.x(),
+				                                               maxExtentQt.y(),
+				                                               maxExtentQt.z() };
 
-		const auto* const geometry{ qobject_cast<CustomGeometry*>(m_Geometry) };
-		if (geometry == nullptr)
+			const std::vector triangles{ ParseTrianglesFromGeometry(*geometry) };
+			const std::vector randomPoints{ GenerateRandomPoints(
+				pointsCount, minimumExtent, maximumExtent) };
+
+			const VolumeApproximation::ApproximationResult result{
+				executor->ComputeVolume(triangles, randomPoints, minimumExtent,
+				                        maximumExtent)
+			};
+
+			// Get volume of cube that contains the entire mesh in cm3
+			const float cubeVolume =
+			    std::abs(maximumExtent.X() - minimumExtent.X()) *
+			    std::abs(maximumExtent.Y() - minimumExtent.Y()) *
+			    std::abs(maximumExtent.Z() - minimumExtent.Z()) * 1'000'000.0F;
+
+			const std::int64_t pointsHit = std::ranges::count_if(
+			    result.Points,
+			    [](const VolumeApproximation::ApproximationPoint& point) {
+				    return point.Status == VolumeApproximation::PointStatus::Inside;
+			    });
+
+			const float finalVolume =
+			    cubeVolume * (static_cast<float>(pointsHit) /
+			                  static_cast<float>(result.Points.size()));
+
+			fmt::print("Mesh volume: {} cm3\n", finalVolume);
+		}
+		catch (const std::exception& e)
+		{
+			fmt::print(stderr, "Failed to compute volume: {}\n", e.what());
+		}
+		catch (...)
 		{
 			fmt::print(stderr,
-			           "Can't approximate default model, load a model first.\n");
-			return;
+			           "Unknown exception caught during volume computation.\n");
 		}
-
-		const std::size_t pointsCount{ pointsCountInput.toULongLong() };
-
-		const QVector3D minExtentQt{ m_Geometry->boundsMin() };
-		const VolumeApproximation::Vector3F minimumExtent{ minExtentQt.x(),
-			                                               minExtentQt.y(),
-			                                               minExtentQt.z() };
-		const QVector3D maxExtentQt{ m_Geometry->boundsMax() };
-		const VolumeApproximation::Vector3F maximumExtent{ maxExtentQt.x(),
-			                                               maxExtentQt.y(),
-			                                               maxExtentQt.z() };
-
-		const std::vector triangles{ ParseTrianglesFromGeometry(*geometry) };
-		const std::vector randomPoints{ GenerateRandomPoints(
-			pointsCount, minimumExtent, maximumExtent) };
-
-		[[maybe_unused]]
-		const auto result = m_VolumeApproximation->ComputeVolume(
-		    triangles, randomPoints, minimumExtent, maximumExtent);
-	}
-	catch (const std::exception& e)
-	{
-		fmt::print(stderr, "Failed to compute volume: {}\n", e.what());
-	}
-	catch (...)
-	{
-		fmt::print(stderr, "Unknown exception caught during volume computation.\n");
-	}
+	});
 }
 
 void SceneController::onComputeEngineChanged(const int index)
