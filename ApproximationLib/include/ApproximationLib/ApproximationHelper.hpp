@@ -11,7 +11,9 @@ namespace VolumeApproximation
 {
 enum class ApproximationExecutor : std::uint8_t
 {
+#ifdef CUDA_ENABLED
 	Cuda,
+#endif
 	ParallelCpu
 };
 
@@ -22,8 +24,10 @@ enum class ApproximationExecutor : std::uint8_t
 
 	switch (approximationStrategy)
 	{
+#ifdef CUDA_ENABLED
 		case ApproximationExecutor::Cuda:
 			return "CUDA";
+#endif
 		case ApproximationExecutor::ParallelCpu:
 			return "Parallel CPU";
 	}
@@ -32,8 +36,10 @@ enum class ApproximationExecutor : std::uint8_t
 
 using ExecutorNamePair = std::pair<ApproximationExecutor, std::string_view>;
 constexpr inline std::array ExecutorNames{
+#ifdef CUDA_ENABLED
 	ExecutorNamePair{ ApproximationExecutor::Cuda,
 	                  EnumToString(ApproximationExecutor::Cuda) },
+#endif
 	ExecutorNamePair{ ApproximationExecutor::ParallelCpu,
 	                  EnumToString(ApproximationExecutor::ParallelCpu) }
 };

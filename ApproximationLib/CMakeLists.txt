@@ -30,7 +30,6 @@ set(SOURCE_FILES
 
 add_library(ApproximationLib SHARED ${HEADER_FILES} ${SOURCE_FILES}
                                     ${CUDA_SOURCES})
-target_link_cuda(ApproximationLib)
 # TODO: project_options seems to be not working with CUDA :(
 # Warnings are ok, but VolumeApproximation_project_options not so much
 target_link_libraries(
@@ -39,6 +38,7 @@ target_link_libraries(
 target_include_directories(ApproximationLib PUBLIC include)
 target_compile_definitions(ApproximationLib PRIVATE APPROXIMATION_LIBRARY)
 if(CUDA_ENABLED)
+  target_link_cuda(ApproximationLib)
   set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} --expt-relaxed-constexpr")
   target_compile_definitions(ApproximationLib PUBLIC CUDA_ENABLED)
   set_target_properties(ApproximationLib PROPERTIES CUDA_ARCHITECTURES "89")

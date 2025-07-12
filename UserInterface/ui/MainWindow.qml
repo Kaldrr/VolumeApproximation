@@ -61,8 +61,6 @@ ApplicationWindow {
 
                 Model {
                     id: cubeModel
-                    eulerRotation.y: 45
-                    eulerRotation.x: 30
                     materials: defaultMaterial
                     geometry: sceneController.mainModel
                 }
@@ -148,6 +146,9 @@ ApplicationWindow {
             xExtent: 100
             yExtent: 100
             zExtent: 100
+        }
+        onRepositionCamera: (pos) => {
+            sceneCamera.position = pos;
         }
     }
 

@@ -4,6 +4,7 @@
 
 #include <QObject>
 #include <QQuick3DGeometry>
+#include <QVector3D>
 
 class SceneController : public QObject
 {
@@ -40,6 +41,7 @@ public:
 signals:
 	void availableComputeEnginesChanged();
 	void mainModelChanged();
+	void repositionCamera(const QVector3D& position);
 
 public slots:
 	void onLoadMeshButtonPress(const QUrl& filePath);

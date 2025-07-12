@@ -42,7 +42,6 @@ std::vector<VolumeApproximation::Triangle> ParseTrianglesFromGeometry(
 	const std::vector<float>& vertexData        = geometry.GetVertexData();
 	const std::vector<std::uint32_t>& indexData = geometry.GetIndexData();
 
-	// TODO: This is better...?
 	std::vector<VolumeApproximation::Triangle> triangles{};
 	triangles.reserve(indexData.size() / 3);
 
@@ -125,10 +124,12 @@ void SceneController::onLoadMeshButtonPress(const QUrl& filePath)
 	fmt::println("LoadMeshButton pressed in SceneView!");
 	try
 	{
-		// TODO: Set camera on the model?
 		auto* const newGeometry{ new CustomGeometry{
 			filePath.toLocalFile().toStdString() } };
 		setMainModel(newGeometry);
+		const QVector3D minExtent{ newGeometry->boundsMin() };
+		// TODO: Implement some better camera controll...
+		emit repositionCamera(minExtent * QVector3D{ 1, 1, 2 });
 	}
 	catch (const std::exception& e)
 	{
@@ -143,7 +144,7 @@ void SceneController::onCalculateButtonPress(const QString& pointsCountInput)
 		fmt::print(stderr, "Volume approximation engine is not available.\n");
 		return;
 	}
-	const auto* const geometry{ qobject_cast<CustomGeometry*>(m_Geometry) };
+	const auto* const geometry{ qobject_cast<const CustomGeometry*>(m_Geometry) };
 	if (geometry == nullptr)
 	{
 		fmt::print(stderr,
@@ -158,13 +159,13 @@ void SceneController::onCalculateButtonPress(const QString& pointsCountInput)
 		try
 		{
 			const QVector3D minExtentQt{ geometry->boundsMin() };
-			const VolumeApproximation::Vector3F minimumExtent{ minExtentQt.x(),
-				                                               minExtentQt.y(),
-				                                               minExtentQt.z() };
+			const VolumeApproximation::Vector3F minimumExtent{
+				std::bit_cast<VolumeApproximation::Vector3F>(minExtentQt)
+			};
 			const QVector3D maxExtentQt{ geometry->boundsMax() };
-			const VolumeApproximation::Vector3F maximumExtent{ maxExtentQt.x(),
-				                                               maxExtentQt.y(),
-				                                               maxExtentQt.z() };
+			const VolumeApproximation::Vector3F maximumExtent{
+				std::bit_cast<VolumeApproximation::Vector3F>(maxExtentQt)
+			};
 
 			const std::vector triangles{ ParseTrianglesFromGeometry(*geometry) };
 			const std::vector randomPoints{ GenerateRandomPoints(
