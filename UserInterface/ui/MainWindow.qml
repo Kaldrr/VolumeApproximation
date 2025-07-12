@@ -32,6 +32,39 @@ ApplicationWindow {
             camera: sceneCamera
             focus: true
 
+            MouseArea {
+                anchors.fill: parent
+                acceptedButtons: Qt.RightButton
+                property real lastX: 0
+                property real lastY: 0
+                property bool rotating: false
+
+                onPressed: (mouseEvent) => {
+                    if (mouseEvent.button === Qt.RightButton) {
+                        lastX = mouseEvent.x;
+                        lastY = mouseEvent.y;
+                        rotating = true;
+                    }
+                }
+
+                onReleased: (mouseEvent) => {
+                    if (mouseEvent.button === Qt.RightButton) {
+                        rotating = false;
+                    }
+                }
+
+                onPositionChanged: (mouseEvent) => {
+                    if (rotating) {
+                        const dx = mouseEvent.x - lastX;
+                        const dy = mouseEvent.y - lastY;
+                        cubeModel.eulerRotation.y += dx * 0.5;
+                        cubeModel.eulerRotation.x += dy * 0.5;
+                        lastX = mouseEvent.x;
+                        lastY = mouseEvent.y;
+                    }
+                }
+            }
+
             SceneEnvironment {
                 id: sceneEnvironment
                 antialiasingMode: SceneEnvironment.MSAA
@@ -49,8 +82,17 @@ ApplicationWindow {
 
             Node {
                 id: scene
+
+                // Lightning hack, maybe do it better in the future? :(
                 DirectionalLight {
-                    id: directionalLight
+                }
+
+                DirectionalLight {
+                    eulerRotation.x: 180
+                }
+
+                DirectionalLight {
+                    eulerRotation.y: 180
                 }
 
                 PerspectiveCamera {
