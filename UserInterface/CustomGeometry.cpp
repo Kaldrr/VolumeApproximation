@@ -66,10 +66,8 @@ CustomGeometry::CustomGeometry(QQuick3DObject* const parent,
 	SetupVertexData(mesh);
 	SetupIndexData(mesh);
 
-	const aiVector3D& minBox = mesh.mAABB.mMin;
-	const aiVector3D& maxBox = mesh.mAABB.mMax;
-	setBounds(QVector3D{ minBox.x, minBox.y, minBox.z },
-	          QVector3D{ maxBox.x, maxBox.y, maxBox.z });
+	setBounds(std::bit_cast<QVector3D>(mesh.mAABB.mMin),
+	          std::bit_cast<QVector3D>(mesh.mAABB.mMax));
 }
 
 void CustomGeometry::SetupVertexData(const aiMesh& mesh)
@@ -120,7 +118,6 @@ void CustomGeometry::SetupIndexData(const aiMesh& mesh)
 	{
 		const std::span<const std::uint32_t> indices{ face.mIndices,
 			                                          face.mNumIndices };
-		// TODO: std::memcpy instead?
 		m_IndexData.insert(m_IndexData.end(), indices.begin(), indices.end());
 	}
 	assert(m_IndexData.size() == requiredSize);

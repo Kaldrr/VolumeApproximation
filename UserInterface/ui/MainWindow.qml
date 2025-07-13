@@ -57,8 +57,8 @@ ApplicationWindow {
                     if (rotating) {
                         const dx = mouseEvent.x - lastX;
                         const dy = mouseEvent.y - lastY;
-                        cubeModel.eulerRotation.y += dx * 0.5;
-                        cubeModel.eulerRotation.x += dy * 0.5;
+                        modelNode.eulerRotation.y += dx * 0.5;
+                        modelNode.eulerRotation.x += dy * 0.5;
                         lastX = mouseEvent.x;
                         lastY = mouseEvent.y;
                     }
@@ -83,26 +83,14 @@ ApplicationWindow {
             Node {
                 id: scene
 
-                // Lightning hack, maybe do it better in the future? :(
-                DirectionalLight {
-                }
-
-                DirectionalLight {
-                    eulerRotation.x: 180
-                }
-
-                DirectionalLight {
-                    eulerRotation.y: 180
-                }
-
                 PerspectiveCamera {
                     id: sceneCamera
-                    lookAtNode: cubeModel
+                    lookAtNode: modelNode
                     z: 350
                 }
 
                 Model {
-                    id: cubeModel
+                    id: modelNode
                     materials: defaultMaterial
                     geometry: sceneController.mainModel
                 }
@@ -192,6 +180,9 @@ ApplicationWindow {
         onRepositionCamera: (pos) => {
             sceneCamera.position = pos;
         }
+        onMainModelChanged: {
+            modelNode.eulerRotation = Qt.vector3d(0, 0, 0);
+        }
     }
 
     Item {
@@ -203,6 +194,7 @@ ApplicationWindow {
             baseColorMap: Texture {
                 id: defaultTexture
             }
+            lighting: DefaultMaterial.NoLighting
         }
     }
 

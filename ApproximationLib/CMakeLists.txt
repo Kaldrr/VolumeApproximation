@@ -1,7 +1,7 @@
 find_package(fmt REQUIRED)
 
 set(CUDA_ENABLED
-    ON
+    OFF
     CACHE BOOL "Enable CUDA backend")
 
 if(CUDA_ENABLED)
@@ -30,11 +30,10 @@ set(SOURCE_FILES
 
 add_library(ApproximationLib SHARED ${HEADER_FILES} ${SOURCE_FILES}
                                     ${CUDA_SOURCES})
-# TODO: project_options seems to be not working with CUDA :(
-# Warnings are ok, but VolumeApproximation_project_options not so much
-target_link_libraries(
-  ApproximationLib PRIVATE tbb fmt::fmt VolumeApproximation_project_warnings
-        )
+# TODO: project_options seems to be not working with CUDA :( Warnings are ok,
+# but VolumeApproximation_project_options not so much
+target_link_libraries(ApproximationLib
+                      PRIVATE tbb fmt::fmt VolumeApproximation_project_warnings)
 target_include_directories(ApproximationLib PUBLIC include)
 target_compile_definitions(ApproximationLib PRIVATE APPROXIMATION_LIBRARY)
 if(CUDA_ENABLED)

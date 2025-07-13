@@ -128,8 +128,7 @@ void SceneController::onLoadMeshButtonPress(const QUrl& filePath)
 			filePath.toLocalFile().toStdString() } };
 		setMainModel(newGeometry);
 		const QVector3D minExtent{ newGeometry->boundsMin() };
-		// TODO: Implement some better camera controll...
-		emit repositionCamera(minExtent * QVector3D{ 0, 0, 2 });
+		emit repositionCamera(minExtent * QVector3D{ 0, 0, 5 });
 	}
 	catch (const std::exception& e)
 	{
