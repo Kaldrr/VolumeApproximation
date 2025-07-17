@@ -6,6 +6,9 @@
 #include <QQuick3DGeometry>
 #include <QVector3D>
 
+// Qt functions/signals/slots shared with QML need to have special naming convention
+// NOLINTBEGIN(readability-identifier-naming)
+
 class SceneController : public QObject
 {
 	Q_OBJECT
@@ -54,3 +57,5 @@ private:
 	std::shared_ptr<VolumeApproximation::IVolumeApproximation>
 	    m_VolumeApproximation;
 };
+
+// NOLINTEND(readability-identifier-naming)

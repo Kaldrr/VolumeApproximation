@@ -1,4 +1,4 @@
-#include <CustomGeometry.hpp>
+#include <UserInterface/CustomGeometry.hpp>
 
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/Importer.hpp>

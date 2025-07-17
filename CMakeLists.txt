@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 4.0.2)
+cmake_minimum_required(VERSION 3.30)
 
 project(VolumeApproximation LANGUAGES CXX)
 
@@ -48,9 +48,9 @@ project_options(
   # ENABLE_SANITIZER_POINTER_COMPARE ENABLE_SANITIZER_POINTER_SUBTRACT
   # ENABLE_CONTROL_FLOW_PROTECTION ENABLE_STACK_PROTECTION
   # ENABLE_OVERFLOW_PROTECTION ENABLE_ELF_PROTECTION
-  # ENABLE_RUNTIME_SYMBOLS_RESOLUTION ENABLE_COMPILE_COMMANDS_SYMLINK
-  # Would be nice to have, but GCC has some weird Qt-generated-code-issues in
-  # release build right now... WARNINGS_AS_ERRORS enable later
+  # ENABLE_RUNTIME_SYMBOLS_RESOLUTION ENABLE_COMPILE_COMMANDS_SYMLINK Would be
+  # nice to have, but GCC has some weird Qt-generated-code-issues in release
+  # build right now... WARNINGS_AS_ERRORS enable later
   # ENABLE_INCLUDE_WHAT_YOU_USE
 )
 

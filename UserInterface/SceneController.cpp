@@ -1,75 +1,17 @@
-#include <random>
 #include <ranges>
 #include <utility>
 
 #include <ApproximationLib/ApproximationHelper.hpp>
 
-#include <CustomGeometry.hpp>
 #include <SceneController.hpp>
+#include <UserInterface/CustomGeometry.hpp>
 
 #include <fmt/core.h>
 
 #include <QThreadPool>
 #include <QVector3D>
 
-namespace
-{
-[[nodiscard]]
-std::vector<VolumeApproximation::Vector3F> GenerateRandomPoints(
-    const std::size_t count,
-    const VolumeApproximation::Vector3F& minExtent,
-    const VolumeApproximation::Vector3F& maxExtent)
-{
-	std::vector<VolumeApproximation::Vector3F> randomPoints{};
-	randomPoints.reserve(count);
-
-	std::mt19937_64 dev{ std::random_device{}() };
-	std::uniform_real_distribution<float> rngX{ minExtent[0], maxExtent[0] };
-	std::uniform_real_distribution<float> rngY{ minExtent[1], maxExtent[1] };
-	std::uniform_real_distribution<float> rngZ{ minExtent[2], maxExtent[2] };
-
-	for (std::size_t i = 0; i < count; ++i)
-	{
-		randomPoints.emplace_back(rngX(dev), rngY(dev), rngZ(dev));
-	}
-	return randomPoints;
-}
-
-[[nodiscard]]
-std::vector<VolumeApproximation::Triangle> ParseTrianglesFromGeometry(
-    const CustomGeometry& geometry)
-{
-	const std::vector<float>& vertexData        = geometry.GetVertexData();
-	const std::vector<std::uint32_t>& indexData = geometry.GetIndexData();
-
-	std::vector<VolumeApproximation::Triangle> triangles{};
-	triangles.reserve(indexData.size() / 3);
-
-	for (std::size_t i{ 0 }; i < indexData.size(); i += 3)
-	{
-		// Vertex data is stored as:
-		// [x, y, z, nx, ny, nz, u, v]
-		// :(
-		const std::uint32_t xIdx{ indexData[i] };
-		const std::uint32_t yIdx{ indexData[i + 1] };
-		const std::uint32_t zIdx{ indexData[i + 2] };
-
-		const float* const xVertex{ &vertexData[xIdx] };
-		const float* const yVertex{ &vertexData[yIdx] };
-		const float* const zVertex{ &vertexData[zIdx] };
-
-		const VolumeApproximation::Triangle triangle{
-			VolumeApproximation::Vector3F{ xVertex[0], xVertex[1], xVertex[2] },
-			VolumeApproximation::Vector3F{ yVertex[0], yVertex[1], yVertex[2] },
-			VolumeApproximation::Vector3F{ zVertex[0], zVertex[1], zVertex[2] }
-		};
-		triangles.emplace_back(triangle);
-	}
-	assert(triangles.size() == indexData.size() / 3);
-
-	return triangles;
-}
-} // namespace
+#include "UserInterface/GeometryHelpers.hpp"
 
 SceneController::SceneController()
     : SceneController{ nullptr }
@@ -138,6 +80,93 @@ void SceneController::onLoadMeshButtonPress(const QUrl& filePath)
 
 void SceneController::onCalculateButtonPress(const QString& pointsCountInput)
 {
+	if (m_Geometry != nullptr)
+	{
+		const auto& geometry     = *m_Geometry;
+		const int attributeCount = geometry.attributeCount();
+		for (int i{}; i < attributeCount; ++i)
+		{
+			const QQuick3DGeometry::Attribute attribute = geometry.attribute(i);
+			QString semanticStr;
+			switch (attribute.semantic)
+			{
+				case QQuick3DGeometry::Attribute::IndexSemantic:
+					semanticStr = "IndexSemantic";
+					break;
+				case QQuick3DGeometry::Attribute::PositionSemantic:
+					semanticStr = "PositionSemantic";
+					break;
+				case QQuick3DGeometry::Attribute::NormalSemantic:
+					semanticStr = "NormalSemantic";
+					break;
+				case QQuick3DGeometry::Attribute::TexCoordSemantic:
+					semanticStr = "TexCoordSemantic";
+					break;
+				case QQuick3DGeometry::Attribute::TangentSemantic:
+					semanticStr = "TangentSemantic";
+					break;
+				case QQuick3DGeometry::Attribute::BinormalSemantic:
+					semanticStr = "BinormalSemantic";
+					break;
+				case QQuick3DGeometry::Attribute::JointSemantic:
+					semanticStr = "JointSemantic";
+					break;
+				case QQuick3DGeometry::Attribute::WeightSemantic:
+					semanticStr = "WeightSemantic";
+					break;
+				case QQuick3DGeometry::Attribute::ColorSemantic:
+					semanticStr = "ColorSemantic";
+					break;
+				case QQuick3DGeometry::Attribute::TargetPositionSemantic:
+					semanticStr = "TargetPositionSemantic";
+					break;
+				case QQuick3DGeometry::Attribute::TargetNormalSemantic:
+					semanticStr = "TargetNormalSemantic";
+					break;
+				case QQuick3DGeometry::Attribute::TargetTangentSemantic:
+					semanticStr = "TargetTangentSemantic";
+					break;
+				case QQuick3DGeometry::Attribute::TargetBinormalSemantic:
+					semanticStr = "TargetBinormalSemantic";
+					break;
+				case QQuick3DGeometry::Attribute::TexCoord1Semantic:
+					semanticStr = "TexCoord1Semantic";
+					break;
+				// case QQuick3DGeometry::Attribute::TexCoord0Semantic: semanticStr
+				// = "TexCoord0Semantic"; break;
+				default:
+					semanticStr = "Unknown";
+					break;
+			}
+			QString componentTypeStr;
+			switch (attribute.componentType)
+			{
+				case QQuick3DGeometry::Attribute::U16Type:
+					componentTypeStr = "U16Type";
+					break;
+				case QQuick3DGeometry::Attribute::U32Type:
+					componentTypeStr = "U32Type";
+					break;
+				case QQuick3DGeometry::Attribute::I32Type:
+					componentTypeStr = "I32Type";
+					break;
+				case QQuick3DGeometry::Attribute::F32Type:
+					componentTypeStr = "F32Type";
+					break;
+				default:
+					componentTypeStr = "Unknown";
+					break;
+			}
+			qDebug()
+			    << "Attribute[" << i << "]"
+			    << "semantic=" << semanticStr << ", offset=" << attribute.offset
+			    << ", componentType=" << componentTypeStr;
+		}
+
+		// TODO: Extract vertex data here, instead of extra field in CustomGeometry
+		const qsizetype vertexCount{ geometry.vertexData().size() /
+			                         geometry.stride() };
+	}
 	if (!m_VolumeApproximation->IsAvailable())
 	{
 		fmt::print(stderr, "Volume approximation engine is not available.\n");
@@ -166,8 +195,8 @@ void SceneController::onCalculateButtonPress(const QString& pointsCountInput)
 				std::bit_cast<VolumeApproximation::Vector3F>(maxExtentQt)
 			};
 
-			const std::vector triangles{ ParseTrianglesFromGeometry(*geometry) };
-			const std::vector randomPoints{ GenerateRandomPoints(
+			const std::vector triangles{ Helpers::ParseTrianglesFromGeometry(*geometry) };
+			const std::vector randomPoints{ Helpers::GenerateRandomPoints(
 				pointsCount, minimumExtent, maximumExtent) };
 
 			const VolumeApproximation::ApproximationResult result{
