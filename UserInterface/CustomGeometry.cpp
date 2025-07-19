@@ -1,4 +1,5 @@
 #include <UserInterface/CustomGeometry.hpp>
+#include <UserInterface/GeometryConstants.hpp>
 
 #include <assimp/DefaultLogger.hpp>
 #include <assimp/Importer.hpp>
@@ -20,16 +21,6 @@ constexpr std::uint32_t ImportFlags =
     aiProcess_RemoveRedundantMaterials | aiProcess_FindInvalidData |
     aiProcess_GenUVCoords | aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph |
     aiProcess_GenBoundingBoxes;
-
-template <typename T>
-[[nodiscard]] QByteArray ToByteArray(const std::span<T> data)
-    requires(std::is_trivially_copyable_v<T>)
-{
-	const auto size{ static_cast<qsizetype>(data.size() * sizeof(T)) };
-	QByteArray byteArray{ size, Qt::Initialization::Uninitialized };
-	std::memcpy(byteArray.data(), data.data(), static_cast<std::size_t>(size));
-	return byteArray;
-}
 } // namespace
 
 CustomGeometry::CustomGeometry(const std::string& modelPath)
@@ -79,7 +70,9 @@ void CustomGeometry::SetupVertexData(const aiMesh& mesh)
 		                                         mesh.mNumVertices };
 
 	constexpr std::size_t VertexSize{ 3 + 3 + 2 };
-	m_VertexData.resize(vertices.size() * VertexSize);
+	const auto totalSize{ static_cast<qsizetype>(vertices.size() * VertexSize *
+		                                         sizeof(float)) };
+	QByteArray vertexData{ totalSize, Qt::Initialization::Uninitialized };
 	for (std::size_t idx{ 0 }; idx < vertices.size(); ++idx)
 	{
 		// Positon  [x, y, z]
@@ -88,11 +81,11 @@ void CustomGeometry::SetupVertexData(const aiMesh& mesh)
 		// 8 floats total per vertex
 		const std::array<aiVector3D, 3> buffer{ vertices[idx], normals[idx],
 			                                    texCoords[idx] };
-		std::memcpy(&m_VertexData[idx * VertexSize], buffer.data(),
-		            sizeof(float) * VertexSize);
+		const auto offset{ static_cast<qsizetype>(idx * VertexSize *
+			                                      sizeof(float)) };
+		std::memcpy(&vertexData[offset], buffer.data(), sizeof(float) * VertexSize);
 	}
-	assert(m_VertexData.size() == vertices.size() * VertexSize);
-	const QByteArray vertexData{ ToByteArray(std::span{ m_VertexData }) };
+	assert(vertexData.size() == totalSize);
 
 	constexpr std::size_t PositionOffset{ 0 };
 	constexpr std::size_t NormalOffset{ 3 * sizeof(float) };
@@ -111,17 +104,19 @@ void CustomGeometry::SetupIndexData(const aiMesh& mesh)
 	const std::span<const aiFace> faces{ mesh.mFaces, mesh.mNumFaces };
 
 	// aiProcess_Triangulate => each face has exactly 3 indices
-	const std::size_t requiredSize{ faces.size() * 3 };
-	m_IndexData.reserve(requiredSize);
-
+	const auto requiredSize{ static_cast<qsizetype>(
+		faces.size() * Constants::ElementsPerFace * sizeof(std::uint32_t)) };
+	QByteArray indexData{};
+	indexData.reserve(requiredSize);
 	for (const aiFace& face : faces)
 	{
 		const std::span<const std::uint32_t> indices{ face.mIndices,
 			                                          face.mNumIndices };
-		m_IndexData.insert(m_IndexData.end(), indices.begin(), indices.end());
+		const auto size{ static_cast<qsizetype>(indices.size() *
+			                                    sizeof(std::uint32_t)) };
+		indexData.append(reinterpret_cast<const char*>(indices.data()), size);
 	}
-	assert(m_IndexData.size() == requiredSize);
-	const QByteArray indexData{ ToByteArray(std::span{ m_IndexData }) };
+	assert(indexData.size() == requiredSize);
 
 	addAttribute(Attribute::IndexSemantic, 0, Attribute::U32Type);
 	setIndexData(indexData);

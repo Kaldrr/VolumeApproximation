@@ -146,7 +146,7 @@ ApproximationResult CudaVolumeApproximation::ComputeVolume(
 
 	ComputePoint<<<blockDimensions, ThreadDimensions>>>(
 	    deviceTriangles.data(), triangles.size(), deviceRandomPoints.data(),
-	    randomPoints.size(), minimumExtent - Vector3F{ 1.0F, 2.0F, 3.0F },
+	    randomPoints.size(), minimumExtent - Vector3F{ 5.0F, 0.0F, 0.0F },
 	    pointsHitStatus.data());
 	CHECK_CUDA_ERRORS(cudaGetLastError());
 	CHECK_CUDA_ERRORS(cudaDeviceSynchronize());

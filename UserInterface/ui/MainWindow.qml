@@ -57,8 +57,8 @@ ApplicationWindow {
                     if (rotating) {
                         const dx = mouseEvent.x - lastX;
                         const dy = mouseEvent.y - lastY;
-                        modelNode.eulerRotation.y += dx * 0.5;
-                        modelNode.eulerRotation.x += dy * 0.5;
+                        rootNode.eulerRotation.y += dx * 0.5;
+                        rootNode.eulerRotation.x += dy * 0.5;
                         lastX = mouseEvent.x;
                         lastY = mouseEvent.y;
                     }
@@ -90,9 +90,21 @@ ApplicationWindow {
                 }
 
                 Model {
-                    id: modelNode
-                    materials: defaultMaterial
-                    geometry: sceneController.mainModel
+                    id: rootNode
+                    Model {
+                        id: modelNode
+                        materials: defaultMaterial
+                        geometry: sceneController.mainModel
+                    }
+
+                    Model {
+                        id: pointsModel
+                        geometry: SphereGeometry {
+                            radius: 0.01
+                        }
+                        instancing: sceneController.pointInstanceModel
+                        materials: defaultMaterial
+                    }
                 }
             }
         }
@@ -164,6 +176,12 @@ ApplicationWindow {
                     onClicked: {
                         sceneController.onCalculateButtonPress(sampleCountField.text)
                     }
+                }
+
+                Button {
+                    Layout.fillWidth: true
+                    text: qsTr("Toggle Model")
+                    onClicked: modelNode.visible = !modelNode.visible
                 }
             }
         }

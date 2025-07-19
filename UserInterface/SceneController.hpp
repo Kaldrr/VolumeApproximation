@@ -1,6 +1,7 @@
 #pragma once
 
 #include <ApproximationLib/ICpuVolumeApproximation.hpp>
+#include <PointsInstancing.hpp>
 
 #include <QObject>
 #include <QQuick3DGeometry>
@@ -17,6 +18,8 @@ class SceneController : public QObject
 	        setAvailableComputeEngines NOTIFY availableComputeEnginesChanged)
 	Q_PROPERTY(QQuick3DGeometry* mainModel READ mainModel WRITE setMainModel NOTIFY
 	               mainModelChanged)
+	Q_PROPERTY(PointsInstancing* pointInstanceModel READ pointInstanceModel WRITE setPointInstanceModel
+		NOTIFY pointInstanceModelChanged)
 	QML_ELEMENT
 
 public:
@@ -41,10 +44,17 @@ public:
 	}
 	void setMainModel(QQuick3DGeometry* geometry);
 
+	[[nodiscard]] PointsInstancing* pointInstanceModel() const noexcept
+	{
+		return m_InstancingModel.get();
+	}
+	void setPointInstanceModel(PointsInstancing* pointInstanceModel) noexcept;
+
 signals:
 	void availableComputeEnginesChanged();
 	void mainModelChanged();
 	void repositionCamera(const QVector3D& position);
+	void pointInstanceModelChanged();
 
 public slots:
 	void onLoadMeshButtonPress(const QUrl& filePath);
@@ -56,6 +66,7 @@ private:
 	QQuick3DGeometry* m_Geometry{ nullptr };
 	std::shared_ptr<VolumeApproximation::IVolumeApproximation>
 	    m_VolumeApproximation;
+	std::unique_ptr<PointsInstancing> m_InstancingModel;
 };
 
 // NOLINTEND(readability-identifier-naming)

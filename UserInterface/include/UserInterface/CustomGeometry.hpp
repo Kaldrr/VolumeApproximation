@@ -23,23 +23,7 @@ public:
 	CustomGeometry& operator=(const CustomGeometry&)     = delete;
 	CustomGeometry& operator=(CustomGeometry&&) noexcept = delete;
 
-	template <typename Self>
-	[[nodiscard]] auto&& GetVertexData(this Self&& self) noexcept
-	{
-		return std::forward_like<Self>(self.m_VertexData);
-	}
-
-	template <typename Self>
-	[[nodiscard]] auto&& GetIndexData(this Self&& self) noexcept
-	{
-		return std::forward_like<Self>(self.m_IndexData);
-	}
-
 private:
 	void SetupVertexData(const aiMesh& mesh);
 	void SetupIndexData(const aiMesh& mesh);
-
-private:
-	std::vector<float> m_VertexData;
-	std::vector<std::uint32_t> m_IndexData;
 };

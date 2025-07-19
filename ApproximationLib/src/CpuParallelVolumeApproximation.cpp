@@ -14,7 +14,7 @@ ApproximationResult CpuParallelVolumeApproximation::ComputeVolume(
 {
 	// Subtract random value from minExtent, to ensure the point we're shooting out
 	// ray towards is out of the box that contains the entire object
-	const Vector3F outsidePoint = minimumExtent - Vector3F{ 1.F,	2.F, 3.F };
+	const Vector3F outsidePoint = minimumExtent - Vector3F{ 5.F, 0.F, 0.F };
 	std::vector<ApproximationPoint> approximationPoints{};
 	approximationPoints.resize(randomPoints.size());
 

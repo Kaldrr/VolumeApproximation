@@ -1,3 +1,5 @@
+#include <UserInterface/CustomGeometry.hpp>
+#include <UserInterface/GeometryConstants.hpp>
 #include <UserInterface/GeometryHelpers.hpp>
 
 #include <random>
@@ -6,9 +8,6 @@
 
 namespace
 {
-// We always use triangles in our geometry
-constexpr std::size_t ElementsInVertex{ 3 };
-
 struct Attributes
 {
 	QQuick3DGeometry::Attribute Position;
@@ -67,8 +66,8 @@ template <typename InDataT, typename OutDataT>
 	// And indices as: [X, Y, Z]
 	// But they can change, u16, u32, etc.
 	std::vector<OutDataT> extractedData{};
-	extractedData.resize(elementCount * 3);
 	using ItrDiff = typename std::vector<OutDataT>::difference_type;
+	extractedData.resize(elementCount * Constants::ElementsPerFace);
 	for (std::size_t i = 0; i < elementCount; ++i)
 	{
 		// We MIGHT need to do a data conversion
@@ -77,9 +76,9 @@ template <typename InDataT, typename OutDataT>
 		std::copy_n(
 		    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
 		    reinterpret_cast<const InDataT*>(&dataView[(i * stride) + offset]),
-		    ElementsInVertex,
+		    Constants::ElementsPerFace,
 		    std::next(extractedData.begin(),
-		              static_cast<ItrDiff>(i * ElementsInVertex)));
+		              static_cast<ItrDiff>(i * Constants::ElementsPerFace)));
 	}
 
 	return extractedData;
@@ -106,6 +105,30 @@ template <typename OutDataT>
 	fmt::println(stderr, "Unknown component type: {}",
 	             static_cast<int>(attribute.componentType));
 	std::unreachable();
+}
+
+template <typename OutDataT>
+[[nodiscard]] std::vector<OutDataT> ExtractIndexData(
+    const QByteArray& data,
+    const QQuick3DGeometry::Attribute& attribute)
+{
+	std::size_t stride{};
+	switch (attribute.componentType)
+	{
+		case QQuick3DGeometry::Attribute::ComponentType::U16Type:
+			stride = sizeof(std::uint16_t) * Constants::ElementsPerFace;
+			break;
+		case QQuick3DGeometry::Attribute::ComponentType::U32Type:
+			stride = sizeof(std::uint32_t) * Constants::ElementsPerFace;
+			break;
+		case QQuick3DGeometry::Attribute::ComponentType::I32Type:
+			stride = sizeof(std::int32_t) * Constants::ElementsPerFace;
+			break;
+		case QQuick3DGeometry::Attribute::ComponentType::F32Type:
+			stride = sizeof(float) * Constants::ElementsPerFace;
+			break;
+	}
+	return ExtractData<OutDataT>(data, attribute, stride);
 }
 } // namespace
 
@@ -141,28 +164,29 @@ std::vector<VolumeApproximation::Triangle> ParseTrianglesFromGeometry(
 
 	const std::vector<float> vertexData{ ExtractData<float>(
 		geometry.vertexData(), attributes.Position, stride) };
-	const std::vector<std::uint32_t> indexData{ ExtractData<std::uint32_t>(
-		geometry.indexData(), attributes.Index, stride) };
+
+	const std::vector<std::uint32_t> indexData{ ExtractIndexData<std::uint32_t>(
+		geometry.indexData(), attributes.Index) };
 
 	std::vector<VolumeApproximation::Triangle> triangles{};
-	triangles.reserve(vertexData.size() / ElementsInVertex);
+	triangles.reserve(vertexData.size() / Constants::ElementsPerFace);
 
-	for (std::size_t i{ 0 }; i < indexData.size(); i += 3)
+	for (std::size_t i{ 0 }; i < indexData.size(); i += Constants::ElementsPerFace)
 	{
-		const std::uint64_t xIdx{ indexData[i] };
-		const std::uint64_t yIdx{ indexData[i + 1] };
-		const std::uint64_t zIdx{ indexData[i + 2] };
+		const std::uint64_t xIdx{ indexData[i] * Constants::ElementsPerFace };
+		const std::uint64_t yIdx{ indexData[i + 1] * Constants::ElementsPerFace };
+		const std::uint64_t zIdx{ indexData[i + 2] * Constants::ElementsPerFace };
 		const VolumeApproximation::Triangle triangle{
-			VolumeApproximation::Vector3F{ vertexData[xIdx], vertexData[xIdx + 1],
-			                               vertexData[xIdx + 2] },
-			VolumeApproximation::Vector3F{ vertexData[yIdx], vertexData[yIdx + 1],
-			                               vertexData[yIdx + 2] },
-			VolumeApproximation::Vector3F{ vertexData[zIdx], vertexData[zIdx + 1],
-			                               vertexData[zIdx + 2] }
+			VolumeApproximation::Vector3F{ vertexData[xIdx], vertexData[xIdx + 1ZU],
+			                               vertexData[xIdx + 2ZU] },
+			VolumeApproximation::Vector3F{ vertexData[yIdx], vertexData[yIdx + 1ZU],
+			                               vertexData[yIdx + 2ZU] },
+			VolumeApproximation::Vector3F{ vertexData[zIdx], vertexData[zIdx + 1ZU],
+			                               vertexData[zIdx + 2ZU] }
 		};
 		triangles.emplace_back(triangle);
 	}
-	assert(triangles.size() == indexData.size() / 3);
+	assert(triangles.size() == indexData.size() / Constants::ElementsPerFace);
 
 	return triangles;
 }

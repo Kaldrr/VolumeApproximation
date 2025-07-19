@@ -46,7 +46,7 @@ ApproximationPoint ICpuVolumeApproximation::ComputePoint(
 		}
 	}
 
-	return ApproximationPoint{ .Point  = pointPosition,
+	return ApproximationPoint{ .Point  = origin,
 		                       .Status = trianglesPassed % 2 == 0
 		                                     ? PointStatus::Outside
 		                                     : PointStatus::Inside };

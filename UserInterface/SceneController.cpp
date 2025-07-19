@@ -20,6 +20,7 @@ SceneController::SceneController()
 
 SceneController::SceneController(QObject* const parent)
     : QObject{ parent }
+    , m_InstancingModel{ std::make_unique<PointsInstancing>() }
 {
 	constexpr auto EnginesCount =
 	    static_cast<qsizetype>(VolumeApproximation::ExecutorNames.size());
@@ -61,6 +62,13 @@ void SceneController::setMainModel(QQuick3DGeometry* geometry)
 	emit mainModelChanged();
 }
 
+void SceneController::setPointInstanceModel(
+    PointsInstancing* pointInstanceModel) noexcept
+{
+	m_InstancingModel.reset(pointInstanceModel);
+	emit pointInstanceModelChanged();
+}
+
 void SceneController::onLoadMeshButtonPress(const QUrl& filePath)
 {
 	fmt::println("LoadMeshButton pressed in SceneView!");
@@ -80,158 +88,65 @@ void SceneController::onLoadMeshButtonPress(const QUrl& filePath)
 
 void SceneController::onCalculateButtonPress(const QString& pointsCountInput)
 {
-	if (m_Geometry != nullptr)
-	{
-		const auto& geometry     = *m_Geometry;
-		const int attributeCount = geometry.attributeCount();
-		for (int i{}; i < attributeCount; ++i)
-		{
-			const QQuick3DGeometry::Attribute attribute = geometry.attribute(i);
-			QString semanticStr;
-			switch (attribute.semantic)
-			{
-				case QQuick3DGeometry::Attribute::IndexSemantic:
-					semanticStr = "IndexSemantic";
-					break;
-				case QQuick3DGeometry::Attribute::PositionSemantic:
-					semanticStr = "PositionSemantic";
-					break;
-				case QQuick3DGeometry::Attribute::NormalSemantic:
-					semanticStr = "NormalSemantic";
-					break;
-				case QQuick3DGeometry::Attribute::TexCoordSemantic:
-					semanticStr = "TexCoordSemantic";
-					break;
-				case QQuick3DGeometry::Attribute::TangentSemantic:
-					semanticStr = "TangentSemantic";
-					break;
-				case QQuick3DGeometry::Attribute::BinormalSemantic:
-					semanticStr = "BinormalSemantic";
-					break;
-				case QQuick3DGeometry::Attribute::JointSemantic:
-					semanticStr = "JointSemantic";
-					break;
-				case QQuick3DGeometry::Attribute::WeightSemantic:
-					semanticStr = "WeightSemantic";
-					break;
-				case QQuick3DGeometry::Attribute::ColorSemantic:
-					semanticStr = "ColorSemantic";
-					break;
-				case QQuick3DGeometry::Attribute::TargetPositionSemantic:
-					semanticStr = "TargetPositionSemantic";
-					break;
-				case QQuick3DGeometry::Attribute::TargetNormalSemantic:
-					semanticStr = "TargetNormalSemantic";
-					break;
-				case QQuick3DGeometry::Attribute::TargetTangentSemantic:
-					semanticStr = "TargetTangentSemantic";
-					break;
-				case QQuick3DGeometry::Attribute::TargetBinormalSemantic:
-					semanticStr = "TargetBinormalSemantic";
-					break;
-				case QQuick3DGeometry::Attribute::TexCoord1Semantic:
-					semanticStr = "TexCoord1Semantic";
-					break;
-				// case QQuick3DGeometry::Attribute::TexCoord0Semantic: semanticStr
-				// = "TexCoord0Semantic"; break;
-				default:
-					semanticStr = "Unknown";
-					break;
-			}
-			QString componentTypeStr;
-			switch (attribute.componentType)
-			{
-				case QQuick3DGeometry::Attribute::U16Type:
-					componentTypeStr = "U16Type";
-					break;
-				case QQuick3DGeometry::Attribute::U32Type:
-					componentTypeStr = "U32Type";
-					break;
-				case QQuick3DGeometry::Attribute::I32Type:
-					componentTypeStr = "I32Type";
-					break;
-				case QQuick3DGeometry::Attribute::F32Type:
-					componentTypeStr = "F32Type";
-					break;
-				default:
-					componentTypeStr = "Unknown";
-					break;
-			}
-			qDebug()
-			    << "Attribute[" << i << "]"
-			    << "semantic=" << semanticStr << ", offset=" << attribute.offset
-			    << ", componentType=" << componentTypeStr;
-		}
-
-		// TODO: Extract vertex data here, instead of extra field in CustomGeometry
-		const qsizetype vertexCount{ geometry.vertexData().size() /
-			                         geometry.stride() };
-	}
 	if (!m_VolumeApproximation->IsAvailable())
 	{
 		fmt::print(stderr, "Volume approximation engine is not available.\n");
 		return;
 	}
-	const auto* const geometry{ qobject_cast<const CustomGeometry*>(m_Geometry) };
-	if (geometry == nullptr)
-	{
-		fmt::print(stderr,
-		           "Can't approximate default model, load a model first.\n");
-		return;
-	}
+	QThreadPool::globalInstance()->start(
+	    [geometry = m_Geometry, executor = m_VolumeApproximation,
+	     pointsCount = pointsCountInput.toULongLong(), this] {
+		    try
+		    {
+			    const QVector3D minExtentQt{ geometry->boundsMin() };
+			    const VolumeApproximation::Vector3F minimumExtent{
+				    std::bit_cast<VolumeApproximation::Vector3F>(minExtentQt)
+			    };
+			    const QVector3D maxExtentQt{ geometry->boundsMax() };
+			    const VolumeApproximation::Vector3F maximumExtent{
+				    std::bit_cast<VolumeApproximation::Vector3F>(maxExtentQt)
+			    };
 
-	QThreadPool::globalInstance()->start([geometry,
-	                                      executor = m_VolumeApproximation,
-	                                      pointsCount =
-	                                          pointsCountInput.toULongLong()] {
-		try
-		{
-			const QVector3D minExtentQt{ geometry->boundsMin() };
-			const VolumeApproximation::Vector3F minimumExtent{
-				std::bit_cast<VolumeApproximation::Vector3F>(minExtentQt)
-			};
-			const QVector3D maxExtentQt{ geometry->boundsMax() };
-			const VolumeApproximation::Vector3F maximumExtent{
-				std::bit_cast<VolumeApproximation::Vector3F>(maxExtentQt)
-			};
+			    const std::vector triangles{ Helpers::ParseTrianglesFromGeometry(
+				    *geometry) };
+			    const std::vector randomPoints{ Helpers::GenerateRandomPoints(
+				    pointsCount, minimumExtent, maximumExtent) };
 
-			const std::vector triangles{ Helpers::ParseTrianglesFromGeometry(*geometry) };
-			const std::vector randomPoints{ Helpers::GenerateRandomPoints(
-				pointsCount, minimumExtent, maximumExtent) };
+			    const VolumeApproximation::ApproximationResult result{
+				    executor->ComputeVolume(triangles, randomPoints, minimumExtent,
+				                            maximumExtent)
+			    };
+			    m_InstancingModel->SetPoints(result.Points);
 
-			const VolumeApproximation::ApproximationResult result{
-				executor->ComputeVolume(triangles, randomPoints, minimumExtent,
-				                        maximumExtent)
-			};
+			    // Get volume of cube that contains the entire mesh in cm3
+			    const float cubeVolume =
+			        std::abs(maximumExtent.X() - minimumExtent.X()) *
+			        std::abs(maximumExtent.Y() - minimumExtent.Y()) *
+			        std::abs(maximumExtent.Z() - minimumExtent.Z()) * 1'000'000.0F;
 
-			// Get volume of cube that contains the entire mesh in cm3
-			const float cubeVolume =
-			    std::abs(maximumExtent.X() - minimumExtent.X()) *
-			    std::abs(maximumExtent.Y() - minimumExtent.Y()) *
-			    std::abs(maximumExtent.Z() - minimumExtent.Z()) * 1'000'000.0F;
+			    const std::int64_t pointsHit = std::ranges::count_if(
+			        result.Points,
+			        [](const VolumeApproximation::ApproximationPoint& point) {
+				        return point.Status ==
+				               VolumeApproximation::PointStatus::Inside;
+			        });
 
-			const std::int64_t pointsHit = std::ranges::count_if(
-			    result.Points,
-			    [](const VolumeApproximation::ApproximationPoint& point) {
-				    return point.Status == VolumeApproximation::PointStatus::Inside;
-			    });
+			    const float finalVolume =
+			        cubeVolume * (static_cast<float>(pointsHit) /
+			                      static_cast<float>(result.Points.size()));
 
-			const float finalVolume =
-			    cubeVolume * (static_cast<float>(pointsHit) /
-			                  static_cast<float>(result.Points.size()));
-
-			fmt::print("Mesh volume: {} cm3\n", finalVolume);
-		}
-		catch (const std::exception& e)
-		{
-			fmt::print(stderr, "Failed to compute volume: {}\n", e.what());
-		}
-		catch (...)
-		{
-			fmt::print(stderr,
-			           "Unknown exception caught during volume computation.\n");
-		}
-	});
+			    fmt::print("Mesh volume: {} cm3\n", finalVolume);
+		    }
+		    catch (const std::exception& e)
+		    {
+			    fmt::print(stderr, "Failed to compute volume: {}\n", e.what());
+		    }
+		    catch (...)
+		    {
+			    fmt::print(stderr,
+			               "Unknown exception caught during volume computation.\n");
+		    }
+	    });
 }
 
 void SceneController::onComputeEngineChanged(const int index)

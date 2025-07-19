@@ -9,12 +9,13 @@ qt_standard_project_setup(REQUIRES 6.9)
 
 set(HEADER_FILES
         include/UserInterface/CustomGeometry.hpp include/UserInterface/GeometryHelpers.hpp
+        include/UserInterface/GeometryConstants.hpp
         # SceneController.hpp needs to be in the "main" directory, as it's used in QML
         # Qt auto-generates files that just #include "SceneController.hpp"
         # If we put it in the include/UserInterface directory, it will not be found
-        SceneController.hpp )
+        SceneController.hpp PointsInstancing.hpp)
 
-set(SOURCE_FILES main.cpp SceneController.cpp CustomGeometry.cpp GeometryHelpers.cpp)
+set(SOURCE_FILES main.cpp SceneController.cpp CustomGeometry.cpp GeometryHelpers.cpp PointsInstancing.cpp)
 
 qt_add_executable(VolumeApproximation ${HEADER_FILES} ${SOURCE_FILES})
 
@@ -26,6 +27,7 @@ qt_add_qml_module(
     ui/MainWindow.qml
   SOURCES
     SceneController.hpp  SceneController.cpp
+    PointsInstancing.hpp PointsInstancing.cpp
   # Compile qml files (listed in QML_FILES) to C++ using qmltc and add these
   # files to the application binary:3 Currently fails with QtQuick.Controls :(
   # https://doc.qt.io/qt-6/qtqml-qml-type-compiler.html#known-limitations
