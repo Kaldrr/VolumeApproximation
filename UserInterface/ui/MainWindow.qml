@@ -102,8 +102,12 @@ ApplicationWindow {
                         geometry: SphereGeometry {
                             radius: 0.01
                         }
-                        instancing: sceneController.pointInstanceModel
                         materials: defaultMaterial
+                        Component.onCompleted: {
+                            // Silence QML warnings about non-bindable properties
+                            // ... but is this any better really?
+                            pointsModel.instancing = sceneController.pointInstanceModel;
+                        }
                     }
                 }
             }
@@ -125,7 +129,6 @@ ApplicationWindow {
 
                 Button {
                     Layout.fillWidth: true
-
                     text: qsTr("Load mesh")
                     onClicked: fileDialog.open()
                 }
@@ -138,14 +141,12 @@ ApplicationWindow {
 
                 Label {
                     Layout.fillWidth: true
-
                     text: qsTr("Sample count")
                 }
 
                 TextField {
                     id: sampleCountField
                     Layout.fillWidth: true
-
                     text: "1000"
                     validator: IntValidator {
                         bottom: 0
@@ -154,17 +155,24 @@ ApplicationWindow {
 
                 Label {
                     Layout.fillWidth: true
-
                     text: qsTr("Compute engine")
                 }
 
                 ComboBox {
                     id: engineSelection
                     Layout.fillWidth: true
-                    model: sceneController.availableComputeEngines
+                    model: ListModel {
+                    }
                     currentIndex: 0
                     onActivated: {
                         sceneController.onComputeEngineChanged(currentIndex)
+                    }
+                    Component.onCompleted: {
+                        // Explicit model to silence QML warnings
+                        // About non-bindable properties >:(
+                        for (let engine of sceneController.availableComputeEngines) {
+                            engineSelection.model.append({ "name": engine });
+                        }
                     }
                 }
 
@@ -189,12 +197,6 @@ ApplicationWindow {
 
     SceneController {
         id: sceneController
-        mainModel: CuboidGeometry {
-            id: cuboidGeometry
-            xExtent: 100
-            yExtent: 100
-            zExtent: 100
-        }
         onRepositionCamera: (pos) => {
             sceneCamera.position = pos;
         }

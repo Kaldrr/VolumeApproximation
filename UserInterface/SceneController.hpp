@@ -4,6 +4,7 @@
 #include <PointsInstancing.hpp>
 
 #include <QObject>
+#include <QRunnable>
 #include <QQuick3DGeometry>
 #include <QVector3D>
 
@@ -13,48 +14,41 @@
 class SceneController : public QObject
 {
 	Q_OBJECT
-	Q_PROPERTY(
-	    QList<QString> availableComputeEngines READ availableComputeEngines WRITE
-	        setAvailableComputeEngines NOTIFY availableComputeEnginesChanged)
-	Q_PROPERTY(QQuick3DGeometry* mainModel READ mainModel WRITE setMainModel NOTIFY
-	               mainModelChanged)
-	Q_PROPERTY(PointsInstancing* pointInstanceModel READ pointInstanceModel WRITE setPointInstanceModel
-		NOTIFY pointInstanceModelChanged)
+	Q_PROPERTY(QStringList availableComputeEngines READ availableComputeEngines)
+	Q_PROPERTY(QQuick3DGeometry* mainModel READ mainModel NOTIFY mainModelChanged)
+	Q_PROPERTY(PointsInstancing* pointInstanceModel READ pointInstanceModel)
 	QML_ELEMENT
 
 public:
 	SceneController();
 	explicit SceneController(QObject* parent);
-	~SceneController() noexcept override;
+	~SceneController() noexcept override = default;
 
 	SceneController(const SceneController&)                = delete;
 	SceneController(SceneController&&) noexcept            = delete;
 	SceneController& operator=(const SceneController&)     = delete;
 	SceneController& operator=(SceneController&&) noexcept = delete;
 
-	[[nodiscard]] const QList<QString>& availableComputeEngines() const noexcept
+	[[nodiscard]] const QStringList& availableComputeEngines() const noexcept
 	{
 		return m_AvailableComputeEngines;
 	}
-	void setAvailableComputeEngines(QList<QString> engines);
 
+	// Used only through QML
 	[[nodiscard]] QQuick3DGeometry* mainModel() const noexcept
 	{
-		return m_Geometry;
+		return m_Geometry.get();
 	}
-	void setMainModel(QQuick3DGeometry* geometry);
 
+	// Used only through QML
 	[[nodiscard]] PointsInstancing* pointInstanceModel() const noexcept
 	{
 		return m_InstancingModel.get();
 	}
-	void setPointInstanceModel(PointsInstancing* pointInstanceModel) noexcept;
 
 signals:
-	void availableComputeEnginesChanged();
 	void mainModelChanged();
 	void repositionCamera(const QVector3D& position);
-	void pointInstanceModelChanged();
 
 public slots:
 	void onLoadMeshButtonPress(const QUrl& filePath);
@@ -62,11 +56,42 @@ public slots:
 	void onComputeEngineChanged(int index);
 
 private:
-	QList<QString> m_AvailableComputeEngines;
-	QQuick3DGeometry* m_Geometry{ nullptr };
+	QStringList m_AvailableComputeEngines;
+
+	// Geometry and VolumeApproximator can change, even when computation is ongoing
+	// shared_ptr is made for exactly such scenarios
+	std::shared_ptr<QQuick3DGeometry> m_Geometry;
 	std::shared_ptr<VolumeApproximation::IVolumeApproximation>
 	    m_VolumeApproximation;
 	std::unique_ptr<PointsInstancing> m_InstancingModel;
+};
+
+class ComputeRunnable final
+    : public QObject
+    , public QRunnable
+{
+	Q_OBJECT
+
+public:
+	ComputeRunnable(const std::size_t pointsCount,
+	                std::shared_ptr<const QQuick3DGeometry> geometry,
+	                std::shared_ptr<VolumeApproximation::IVolumeApproximation>
+	                    executor) noexcept
+	    : m_PointsCount{ pointsCount }
+	    , m_Geometry{ std::move(geometry) }
+	    , m_Executor{ std::move(executor) }
+	{
+	}
+
+	void run() override;
+
+signals:
+	void VolumeComputed(const VolumeApproximation::ApproximationResult& result);
+
+private:
+	std::size_t m_PointsCount{};
+	std::shared_ptr<const QQuick3DGeometry> m_Geometry;
+	std::shared_ptr<VolumeApproximation::IVolumeApproximation> m_Executor;
 };
 
 // NOLINTEND(readability-identifier-naming)

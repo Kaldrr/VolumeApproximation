@@ -5,9 +5,6 @@ set(CUDA_ENABLED
     CACHE BOOL "Enable CUDA backend")
 
 if(CUDA_ENABLED)
-  # Ugly hack :( but CUDA complains about gcc-15 for now
-  set(CMAKE_CUDA_COMPILER "nvcc")
-  set(CMAKE_CUDA_HOST_COMPILER "g++-14")
   if(NOT DEFINED CMAKE_CUDA_ARCHITECTURES)
     set(CMAKE_CUDA_ARCHITECTURES 89)
   endif()
@@ -34,10 +31,15 @@ set(SOURCE_FILES
 
 add_library(ApproximationLib SHARED ${HEADER_FILES} ${SOURCE_FILES}
                                     ${CUDA_SOURCES})
-# TODO: project_options seems to be not working with CUDA :( Warnings are ok,
-# but VolumeApproximation_project_options not so much
-target_link_libraries(ApproximationLib
-                      PRIVATE tbb fmt::fmt VolumeApproximation_project_warnings)
+# VolumeApproximation_project_options seems to sometimes break CUDA builds
+# causing functions to return weird out of memory errors
+# works with current version of CUDA (13.0) + GCC (15.2.1 20250813)
+# but in case of issues comment it out here and in UserInterface
+target_link_libraries(
+  ApproximationLib
+  PUBLIC VolumeApproximation_project_warnings
+         VolumeApproximation_project_options
+  PRIVATE tbb fmt::fmt)
 target_include_directories(ApproximationLib PUBLIC include)
 target_compile_definitions(ApproximationLib PRIVATE APPROXIMATION_LIBRARY)
 if(CUDA_ENABLED)

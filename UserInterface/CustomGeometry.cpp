@@ -23,15 +23,21 @@ constexpr std::uint32_t ImportFlags =
     aiProcess_GenBoundingBoxes;
 } // namespace
 
-CustomGeometry::CustomGeometry(const std::string& modelPath)
+CustomGeometry::CustomGeometry(const std::filesystem::path& modelPath)
     : CustomGeometry{ nullptr, modelPath }
 {
 }
 
 CustomGeometry::CustomGeometry(QQuick3DObject* const parent,
-                               const std::string& modelPath)
+                               const std::filesystem::path& modelPath)
     : QQuick3DGeometry{ parent }
 {
+	if (!std::filesystem::exists(modelPath))
+	{
+		throw std::runtime_error{ fmt::format("Model file does not exist: {}",
+			                                  modelPath.string()) };
+	}
+
 	Assimp::Importer importer{};
 	const aiScene* const scene{ importer.ReadFile(modelPath, ImportFlags) };
 	if (scene == nullptr)
@@ -69,7 +75,9 @@ void CustomGeometry::SetupVertexData(const aiMesh& mesh)
 	const std::span<const aiVector3D> texCoords{ mesh.mTextureCoords[0],
 		                                         mesh.mNumVertices };
 
-	constexpr std::size_t VertexSize{ 3 + 3 + 2 };
+	constexpr std::size_t TexCoordsSize{ 2 };
+	constexpr std::size_t VertexSize{ Constants::ElementsPerFace * 2 +
+		                              TexCoordsSize };
 	const auto totalSize{ static_cast<qsizetype>(vertices.size() * VertexSize *
 		                                         sizeof(float)) };
 	QByteArray vertexData{ totalSize, Qt::Initialization::Uninitialized };
@@ -88,8 +96,10 @@ void CustomGeometry::SetupVertexData(const aiMesh& mesh)
 	assert(vertexData.size() == totalSize);
 
 	constexpr std::size_t PositionOffset{ 0 };
-	constexpr std::size_t NormalOffset{ 3 * sizeof(float) };
-	constexpr std::size_t TexCoordOffset{ 6 * sizeof(float) };
+	constexpr std::size_t NormalOffset{ Constants::ElementsPerFace *
+		                                sizeof(float) };
+	constexpr std::size_t TexCoordOffset{ 2 * Constants::ElementsPerFace *
+		                                  sizeof(float) };
 
 	setPrimitiveType(PrimitiveType::Triangles);
 	addAttribute(Attribute::PositionSemantic, PositionOffset, Attribute::F32Type);
@@ -106,15 +116,17 @@ void CustomGeometry::SetupIndexData(const aiMesh& mesh)
 	// aiProcess_Triangulate => each face has exactly 3 indices
 	const auto requiredSize{ static_cast<qsizetype>(
 		faces.size() * Constants::ElementsPerFace * sizeof(std::uint32_t)) };
+
 	QByteArray indexData{};
 	indexData.reserve(requiredSize);
 	for (const aiFace& face : faces)
 	{
 		const std::span<const std::uint32_t> indices{ face.mIndices,
 			                                          face.mNumIndices };
-		const auto size{ static_cast<qsizetype>(indices.size() *
-			                                    sizeof(std::uint32_t)) };
-		indexData.append(reinterpret_cast<const char*>(indices.data()), size);
+		// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
+		indexData.append(reinterpret_cast<const char*>(indices.data()),
+		                 static_cast<qsizetype>(Constants::ElementsPerFace *
+		                                        sizeof(std::uint32_t)));
 	}
 	assert(indexData.size() == requiredSize);
 

@@ -53,11 +53,8 @@ template <typename InDataT, typename OutDataT>
                                                       const std::size_t offset,
                                                       const std::size_t stride)
 {
-	const std::span<const std::byte> dataView{
-		// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-		reinterpret_cast<const std::byte*>(data.data()),
-		static_cast<std::size_t>(data.size())
-	};
+	const std::span<const std::byte> dataView{ std::as_bytes(
+		std::span{ data.data(), static_cast<std::size_t>(data.size()) }) };
 	const std::size_t elementCount{ dataView.size() / stride };
 
 	// We are always using triangles
@@ -90,7 +87,7 @@ template <typename OutDataT>
     const QQuick3DGeometry::Attribute& attribute,
     const std::size_t stride)
 {
-	const std::size_t offset{ static_cast<std::size_t>(attribute.offset) };
+	const auto offset{ static_cast<std::size_t>(attribute.offset) };
 	switch (attribute.componentType)
 	{
 		case QQuick3DGeometry::Attribute::ComponentType::U16Type:

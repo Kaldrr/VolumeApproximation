@@ -27,7 +27,6 @@ qt_add_qml_module(
     ui/MainWindow.qml
   SOURCES
     SceneController.hpp  SceneController.cpp
-    PointsInstancing.hpp PointsInstancing.cpp
   # Compile qml files (listed in QML_FILES) to C++ using qmltc and add these
   # files to the application binary:3 Currently fails with QtQuick.Controls :(
   # https://doc.qt.io/qt-6/qtqml-qml-type-compiler.html#known-limitations
@@ -41,6 +40,7 @@ target_link_libraries(
   VolumeApproximation
   PRIVATE ApproximationLib
           VolumeApproximation_project_warnings
+          VolumeApproximation_project_options
           assimp::assimp
           fmt::fmt
           Qt6::Core

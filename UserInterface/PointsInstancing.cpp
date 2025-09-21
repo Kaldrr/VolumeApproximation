@@ -10,6 +10,12 @@ PointsInstancing::PointsInstancing(QQuick3DObject* parent)
 {
 }
 
+void PointsInstancing::SetResult(
+    const VolumeApproximation::ApproximationResult& result)
+{
+	SetPoints(result.Points);
+}
+
 void PointsInstancing::SetPoints(
     const std::span<const VolumeApproximation::ApproximationPoint> points)
 {
@@ -21,6 +27,8 @@ void PointsInstancing::SetPoints(
 	constexpr QColor OutsideColor{ 255, 0, 0, 255 }; // Red
 
 	m_InstanceCount = points.size();
+	m_InstanceBuffer.reserve(
+	    static_cast<qsizetype>(sizeof(InstanceTableEntry) * m_InstanceCount));
 	for (const VolumeApproximation::ApproximationPoint& point : points)
 	{
 		const InstanceTableEntry entry = calculateTableEntry(
@@ -28,9 +36,18 @@ void PointsInstancing::SetPoints(
 		    point.Status == VolumeApproximation::PointStatus::Inside
 		        ? InsideColor
 		        : OutsideColor);
+
+		// NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
 		m_InstanceBuffer.append(reinterpret_cast<const char*>(&entry),
 		                        sizeof(entry));
 	}
+	markDirty();
+}
+
+void PointsInstancing::ClearPoints()
+{
+	m_InstanceCount = 0UZ;
+	m_InstanceBuffer.clear();
 	markDirty();
 }
 
