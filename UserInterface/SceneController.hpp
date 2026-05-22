@@ -17,6 +17,8 @@ class SceneController : public QObject
 	Q_PROPERTY(QStringList availableComputeEngines READ availableComputeEngines)
 	Q_PROPERTY(QQuick3DGeometry* mainModel READ mainModel NOTIFY mainModelChanged)
 	Q_PROPERTY(PointsInstancing* pointInstanceModel READ pointInstanceModel)
+	Q_PROPERTY(
+	    double computedVolume READ computedVolume NOTIFY computedVolumeChanged)
 	QML_ELEMENT
 
 public:
@@ -46,14 +48,25 @@ public:
 		return m_InstancingModel.get();
 	}
 
+	[[nodiscard]] double computedVolume() const noexcept
+	{
+		return m_ComputedVolume;
+	}
+
 signals:
 	void mainModelChanged();
 	void repositionCamera(const QVector3D& position);
+	void computedVolumeChanged();
 
 public slots:
 	void onLoadMeshButtonPress(const QUrl& filePath);
 	void onCalculateButtonPress(const QString& pointsCountInput);
 	void onComputeEngineChanged(int index);
+
+private slots:
+	void onVolumeComputed(
+	    const std::shared_ptr<const VolumeApproximation::ApproximationResult>&
+	        result);
 
 private:
 	QStringList m_AvailableComputeEngines;
@@ -64,6 +77,7 @@ private:
 	std::shared_ptr<VolumeApproximation::IVolumeApproximation>
 	    m_VolumeApproximation;
 	std::unique_ptr<PointsInstancing> m_InstancingModel;
+	double m_ComputedVolume{};
 };
 
 class ComputeRunnable final
@@ -86,7 +100,9 @@ public:
 	void run() override;
 
 signals:
-	void VolumeComputed(const VolumeApproximation::ApproximationResult& result);
+	void VolumeComputed(
+	    const std::shared_ptr<const VolumeApproximation::ApproximationResult>&
+	        result);
 
 private:
 	std::size_t m_PointsCount{};

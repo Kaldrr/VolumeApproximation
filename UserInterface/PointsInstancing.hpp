@@ -19,7 +19,9 @@ public:
 	PointsInstancing& operator=(PointsInstancing&&) noexcept = delete;
 
 public slots:
-	void SetResult(const VolumeApproximation::ApproximationResult& result);
+	void SetResult(
+	    const std::shared_ptr<const VolumeApproximation::ApproximationResult>&
+	        result);
 	void SetPoints(std::span<const VolumeApproximation::ApproximationPoint> points);
 	void ClearPoints();
 

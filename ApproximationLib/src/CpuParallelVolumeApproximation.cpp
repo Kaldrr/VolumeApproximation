@@ -24,8 +24,23 @@ ApproximationResult CpuParallelVolumeApproximation::ComputeVolume(
 		               return ComputePoint(randomPoint, outsidePoint, triangles);
 	               });
 
+	const double cubeVolume =
+	    static_cast<double>(std::abs(maximumExtent.X() - minimumExtent.X())) *
+	    static_cast<double>(std::abs(maximumExtent.Y() - minimumExtent.Y())) *
+	    static_cast<double>(std::abs(maximumExtent.Z() - minimumExtent.Z())) *
+	    1'000'000.0;
+
+	const std::int64_t pointsHit = std::ranges::count_if(
+	    approximationPoints, [](const ApproximationPoint& point) {
+		    return point.Status == PointStatus::Inside;
+	    });
+
+	const double finalVolume =
+	    cubeVolume *
+	    (static_cast<double>(pointsHit) / static_cast<double>(randomPoints.size()));
+
 	return ApproximationResult{ .Points    = std::move(approximationPoints),
-		                        .Volume    = 0.0,
+		                        .Volume    = finalVolume,
 		                        .MinExtent = minimumExtent,
 		                        .MaxExtent = maximumExtent };
 }

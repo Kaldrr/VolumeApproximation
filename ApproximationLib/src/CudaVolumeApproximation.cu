@@ -6,6 +6,7 @@
 #include <thrust/device_vector.h>
 #include <thrust/host_vector.h>
 
+#include <algorithm>
 #include <chrono>
 #include <memory>
 #include <utility>
@@ -104,7 +105,7 @@ bool CudaVolumeApproximation::IsAvailable() const noexcept
 	// Should be available if we have at least one device
 	int devicesCount{};
 	if (const cudaError_t status = cudaGetDeviceCount(&devicesCount);
-		status != cudaError_t::cudaSuccess)
+	    status != cudaError_t::cudaSuccess)
 	{
 		fmt::print("Failed to get cuda devices count: {}\n",
 		           cudaGetErrorString(status));
@@ -123,8 +124,7 @@ ApproximationResult CudaVolumeApproximation::ComputeVolume(
 	CHECK_CUDA_ERRORS(cudaGetDeviceCount(&deviceCount));
 	if (deviceCount == 0)
 	{
-		fmt::print("No cuda devices avaliable...");
-		std::terminate();
+		throw std::runtime_error{"No CUDA devices found"};
 	}
 
 	const thrust::device_vector<Triangle> deviceTriangles{ triangles.begin(),
@@ -163,8 +163,20 @@ ApproximationResult CudaVolumeApproximation::ComputeVolume(
 		                                     : PointStatus::Outside });
 	}
 
+	const double cubeVolume =
+	    static_cast<double>(std::abs(maximumExtent.X() - minimumExtent.X())) *
+	    static_cast<double>(std::abs(maximumExtent.Y() - minimumExtent.Y())) *
+	    static_cast<double>(std::abs(maximumExtent.Z() - minimumExtent.Z())) *
+	    1'000'000.0;
+
+	const std::int64_t pointsHit = std::ranges::count(hostPointsHitStatus, true);
+
+	const double finalVolume =
+	    cubeVolume *
+	    (static_cast<double>(pointsHit) / static_cast<double>(randomPoints.size()));
+
 	return ApproximationResult{ .Points    = std::move(outPoints),
-		                        .Volume    = 0.0,
+		                        .Volume    = finalVolume,
 		                        .MinExtent = minimumExtent,
 		                        .MaxExtent = maximumExtent };
 }

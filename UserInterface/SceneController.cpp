@@ -35,8 +35,8 @@ SceneController::SceneController(QObject* const parent)
 	m_VolumeApproximation = VolumeApproximation::CreateApproximationStrategy(
 	    VolumeApproximation::ExecutorNames.front().first);
 
-	connect(this, &SceneController::mainModelChanged,
-		m_InstancingModel.get(), &PointsInstancing::ClearPoints);
+	connect(this, &SceneController::mainModelChanged, m_InstancingModel.get(),
+	        &PointsInstancing::ClearPoints);
 }
 
 void SceneController::onLoadMeshButtonPress(const QUrl& filePath)
@@ -61,11 +61,13 @@ void SceneController::onCalculateButtonPress(const QString& pointsCountInput)
 		fmt::println(stderr, "Volume approximation engine is not available");
 		return;
 	}
-	std::unique_ptr runnable{ std::make_unique<ComputeRunnable>(
+	auto runnable{ std::make_unique<ComputeRunnable>(
 		pointsCountInput.toULongLong(), m_Geometry, m_VolumeApproximation) };
 	runnable->setAutoDelete(true);
 	connect(runnable.get(), &ComputeRunnable::VolumeComputed,
 	        m_InstancingModel.get(), &PointsInstancing::SetResult);
+	connect(runnable.get(), &ComputeRunnable::VolumeComputed, this,
+	        &SceneController::onVolumeComputed);
 
 	QThreadPool::globalInstance()->start(runnable.release());
 }
@@ -82,8 +84,8 @@ void SceneController::onComputeEngineChanged(const int index)
 
 	const VolumeApproximation::ApproximationExecutor chosenExecutor =
 	    VolumeApproximation::ExecutorNames.at(idx).first;
-	m_VolumeApproximation.reset(
-	    VolumeApproximation::CreateApproximationStrategy(chosenExecutor).release());
+	m_VolumeApproximation =
+	    VolumeApproximation::CreateApproximationStrategy(chosenExecutor);
 }
 
 void ComputeRunnable::run()
@@ -102,31 +104,10 @@ void ComputeRunnable::run()
 		const std::vector randomPoints{ Helpers::GenerateRandomPoints(
 			m_PointsCount, minimumExtent, maximumExtent) };
 
-		const VolumeApproximation::ApproximationResult result{
+		auto result{ std::make_shared<VolumeApproximation::ApproximationResult>(
 			m_Executor->ComputeVolume(triangles, randomPoints, minimumExtent,
-			                          maximumExtent)
-		};
-		// TODO: is this actually thread safe???
-		// Sending a local variable through a signal
-		emit VolumeComputed(result);
-
-		// Get volume of cube that contains the entire mesh in cm3
-		const float cubeVolume = std::abs(maximumExtent.X() - minimumExtent.X()) *
-		                         std::abs(maximumExtent.Y() - minimumExtent.Y()) *
-		                         std::abs(maximumExtent.Z() - minimumExtent.Z()) *
-		                         1'000'000.0F;
-
-		const std::int64_t pointsHit = std::ranges::count_if(
-		    result.Points,
-		    [](const VolumeApproximation::ApproximationPoint& point) {
-			    return point.Status == VolumeApproximation::PointStatus::Inside;
-		    });
-
-		const float finalVolume =
-		    cubeVolume * (static_cast<float>(pointsHit) /
-		                  static_cast<float>(result.Points.size()));
-
-		fmt::println("Mesh volume: {} cm3", finalVolume);
+			                          maximumExtent)) };
+		emit VolumeComputed(std::move(result));
 	}
 	catch (const std::exception& e)
 	{
@@ -136,4 +117,11 @@ void ComputeRunnable::run()
 	{
 		fmt::println(stderr, "Unknown exception caught during volume computation.");
 	}
+}
+
+void SceneController::onVolumeComputed(
+    const std::shared_ptr<const VolumeApproximation::ApproximationResult>& result)
+{
+	m_ComputedVolume = result->Volume;
+	emit computedVolumeChanged();
 }

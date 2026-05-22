@@ -11,9 +11,9 @@ PointsInstancing::PointsInstancing(QQuick3DObject* parent)
 }
 
 void PointsInstancing::SetResult(
-    const VolumeApproximation::ApproximationResult& result)
+    const std::shared_ptr<const VolumeApproximation::ApproximationResult>& result)
 {
-	SetPoints(result.Points);
+	SetPoints(result->Points);
 }
 
 void PointsInstancing::SetPoints(

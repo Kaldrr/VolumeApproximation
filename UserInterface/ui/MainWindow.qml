@@ -93,7 +93,7 @@ ApplicationWindow {
                     id: rootNode
                     Model {
                         id: modelNode
-                        materials: defaultMaterial
+                        materials: modelMaterial
                         geometry: sceneController.mainModel
                     }
 
@@ -191,6 +191,82 @@ ApplicationWindow {
                     text: qsTr("Toggle Model")
                     onClicked: modelNode.visible = !modelNode.visible
                 }
+
+                // --- Volume Result ---
+                Rectangle {
+                    Layout.fillWidth: true
+                    color: "transparent"
+                    border.color: "#cccccc"
+                    radius: 4
+                    height: volumeResultColumn.implicitHeight + 16
+
+                    ColumnLayout {
+                        id: volumeResultColumn
+                        anchors {
+                            left: parent.left
+                            right: parent.right
+                            top: parent.top
+                            margins: 8
+                        }
+                        spacing: 4
+
+                        Label {
+                            text: qsTr("Volume Result")
+                            font.bold: true
+                        }
+
+                        Label {
+                            Layout.fillWidth: true
+                            text: sceneController.computedVolume > 0
+                                  ? sceneController.computedVolume.toFixed(2) + " cm³"
+                                  : qsTr("—")
+                            font.pixelSize: 14
+                            wrapMode: Text.WordWrap
+                        }
+                    }
+                }
+                // --- End Volume Result ---
+
+                // --- Points Instancing Controls ---
+                Rectangle {
+                    Layout.fillWidth: true
+                    color: "transparent"
+                    border.color: "#cccccc"
+                    radius: 4
+                    ColumnLayout {
+                        spacing: 8
+                        anchors.fill: parent
+
+                        Label {
+                            text: qsTr("Points Instancing")
+                            font.bold: true
+                        }
+
+                        CheckBox {
+                            id: pointsVisibleBox
+                            text: qsTr("Show Points")
+                            checked: pointsModel.visible
+                            onCheckedChanged: pointsModel.visible = checked
+                        }
+
+                        RowLayout {
+                            spacing: 4
+                            Label {
+                                text: qsTr("Sphere Size")
+                            }
+                            Slider {
+                                id: sphereSizeSlider
+                                from: 0.005
+                                to: 0.5
+                                stepSize: 0.001
+                                value: pointsModel.geometry.radius
+                                Layout.fillWidth: true
+                                onValueChanged: pointsModel.geometry.radius = value
+                            }
+                        }
+                    }
+                }
+                // --- End Points Instancing Controls ---
             }
         }
     }
@@ -207,6 +283,17 @@ ApplicationWindow {
 
     Item {
         id: __materialLibrary__
+
+        PrincipledMaterial {
+            id: modelMaterial
+            objectName: "Default Material"
+            baseColor: "#4aee45"
+            baseColorMap: Texture {
+                id: modelTexture
+            }
+            lighting: DefaultMaterial.NoLighting
+        }
+
         PrincipledMaterial {
             id: defaultMaterial
             objectName: "Default Material"
@@ -230,8 +317,8 @@ ApplicationWindow {
         id: textureFileDialog
         currentFolder: StandardPaths.standardLocations(StandardPaths.PicturesLocation)[0]
         onAccepted: {
-            defaultMaterial.baseColor = "#ffffff"
-            defaultTexture.source = selectedFile
+            modelMaterial.baseColor = "#ffffff"
+            modelTexture.source = selectedFile
         }
     }
 }
