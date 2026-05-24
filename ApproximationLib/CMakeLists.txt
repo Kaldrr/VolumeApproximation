@@ -13,7 +13,8 @@ if(CUDA_ENABLED)
     set(CMAKE_CUDA_STANDARD_REQUIRED ON)
   endif()
   set(CUDA_SOURCES src/CudaVolumeApproximation.cu
-                   include/ApproximationLib/CudaVolumeApproximation.hpp)
+                   include/ApproximationLib/CudaVolumeApproximation.hpp
+  )
 endif()
 
 set(HEADER_FILES
@@ -23,11 +24,14 @@ set(HEADER_FILES
     include/ApproximationLib/Vector3.hpp
     include/ApproximationLib/CudaVolumeApproximation.hpp
     include/ApproximationLib/CpuParallelVolumeApproximation.hpp
-    include/ApproximationLib/ICpuVolumeApproximation.hpp)
+    include/ApproximationLib/ICpuVolumeApproximation.hpp
+    include/ApproximationLib/PointCalculations.hpp
+)
 
 set(SOURCE_FILES
     src/ApproximationHelper.cpp src/ICpuVolumeApproximationStrategy.cpp
-    src/CpuParallelVolumeApproximation.cpp)
+    src/CpuParallelVolumeApproximation.cpp
+)
 
 add_library(ApproximationLib SHARED ${HEADER_FILES} ${SOURCE_FILES}
                                     ${CUDA_SOURCES})

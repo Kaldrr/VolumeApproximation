@@ -5,7 +5,7 @@
 #include <array>
 #include <cmath>
 
-#if defined(__CUDACC__)
+#ifdef __CUDACC__
 #define VECTOR_ATTRIBUTES __host__ __device__
 #else
 #define VECTOR_ATTRIBUTES
@@ -181,8 +181,8 @@ VECTOR_ATTRIBUTES constexpr T Vector3<T>::Z() const noexcept
 template <typename T>
 VECTOR_ATTRIBUTES constexpr bool Vector3<T>::FuzzyIsZero(const T f) noexcept
 {
-	constexpr T epsilon = T(0.00001);
-	return std::abs(f) <= epsilon;
+	constexpr T Epsilon = T(0.00001);
+	return std::abs(f) <= Epsilon;
 }
 
 } // namespace VolumeApproximation

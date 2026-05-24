@@ -1,5 +1,7 @@
 #include <ApproximationLib/CudaVolumeApproximation.hpp>
 
+#include <ApproximationLib/PointCalculations.hpp>
+
 #include <cuda_runtime.h>
 #include <device_launch_parameters.h>
 
@@ -15,67 +17,39 @@
 
 namespace
 {
-using namespace VolumeApproximation;
-
-__device__ bool IsPointInside(const Vector3F& origin,
-                              const Vector3F& pointPosition,
-                              const thrust::device_ptr<const Triangle> triangles,
-                              const std::size_t trianglesSize)
+__device__ bool IsPointInside(
+    const VolumeApproximation::Vector3F& origin,
+    const VolumeApproximation::Vector3F& pointPosition,
+    const thrust::device_ptr<const VolumeApproximation::Triangle> triangles,
+    const std::size_t trianglesSize)
 {
-	constexpr float Epsilon = 0.0000001f;
-
-	const Vector3F rayVector    = (origin - pointPosition).Normalized();
+	const VolumeApproximation::Vector3F rayVector =
+	    (origin - pointPosition).Normalized();
 	std::size_t trianglesPassed = 0;
 
-	for (std::size_t i = 0; i < trianglesSize; ++i)
+	for (std::size_t i{}; i < trianglesSize; ++i)
 	{
-		const Triangle& triangle = triangles[i];
-
-		const Vector3F edge1 = triangle[1] - triangle[0];
-		const Vector3F edge2 = triangle[2] - triangle[0];
-		const Vector3F h     = Vector3F::CrossProduct(rayVector, edge2);
-		const float a        = Vector3F::DotProduct(edge1, h);
-
-		if (-Epsilon < a && a < Epsilon)
-		{
-			continue;
-		}
-
-		const float f    = 1.0f / a;
-		const Vector3F s = origin - triangle[0];
-		const float u    = f * Vector3F::DotProduct(s, h);
-		if (u < 0.0f || u > 1.0f)
-		{
-			continue;
-		}
-
-		const Vector3F q = Vector3F::CrossProduct(s, edge1);
-		const float v    = f * Vector3F::DotProduct(rayVector, q);
-		if (0.0f > v || (u + v) > 1.0f)
-		{
-			continue;
-		}
-
-		const float t = f * Vector3F::DotProduct(edge2, q);
-		if (t > Epsilon)
+		const VolumeApproximation::Triangle& triangle = triangles[i];
+		if (VolumeApproximation::RayIntersection(origin, rayVector, triangle))
 		{
 			++trianglesPassed;
 		}
 	}
-
 	return trianglesPassed % 2 == 1;
 }
 
-__global__ void ComputePoint(const thrust::device_ptr<const Triangle> triangles,
-                             const std::size_t trianglesSize,
-                             const thrust::device_ptr<const Vector3F> points,
-                             const std::size_t pointsSize,
-                             const Vector3F outsidePoint,
-                             const thrust::device_ptr<bool> hitArray)
+__global__ void ComputePoint(
+    const thrust::device_ptr<const VolumeApproximation::Triangle> triangles,
+    const std::size_t trianglesSize,
+    const thrust::device_ptr<const VolumeApproximation::Vector3F> points,
+    const std::size_t pointsSize,
+    const VolumeApproximation::Vector3F outsidePoint,
+    const thrust::device_ptr<bool> hitArray)
 {
 	const std::uint32_t i = (blockIdx.x * blockDim.x) + threadIdx.x;
 	if (i < pointsSize)
 	{
+		const VolumeApproximation::Vector3F point = points[i];
 		hitArray[i] =
 		    IsPointInside(points[i], outsidePoint, triangles, trianglesSize);
 	}
@@ -124,7 +98,7 @@ ApproximationResult CudaVolumeApproximation::ComputeVolume(
 	CHECK_CUDA_ERRORS(cudaGetDeviceCount(&deviceCount));
 	if (deviceCount == 0)
 	{
-		throw std::runtime_error{"No CUDA devices found"};
+		throw std::runtime_error{ "No CUDA devices found" };
 	}
 
 	const thrust::device_vector<Triangle> deviceTriangles{ triangles.begin(),
