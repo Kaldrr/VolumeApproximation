@@ -15,8 +15,38 @@
 
 #include <fmt/core.h>
 
+#if __has_cpp_attribute(cpp_impl_reflection)
+#if __cpp_impl_reflection >= 202506L
+#include <meta>
+#define REFLECTION
+#endif
+#endif
+
 namespace
 {
+#ifdef REFLECTION
+template <typename T>
+    requires std::is_enum_v<T>
+[[nodiscard]] constexpr std::string_view EnumValue(const T val) noexcept
+{
+	template for (constexpr auto e :
+	              std::define_static_array(std::meta::enumerators_of(^^T)))
+	{
+		if (val == [:e:])
+			return std::meta::identifier_of(e);
+	}
+
+	return "<unknown>";
+}
+#else
+template <typename T>
+    requires std::is_enum_v<T>
+[[nodiscard]] constexpr std::string_view EnumValue(const T val) noexcept
+{
+	return static_cast<std::underlying_type_t<T>>(val);
+}
+#endif
+
 __device__ bool IsPointInside(
     const VolumeApproximation::Vector3F& origin,
     const VolumeApproximation::Vector3F& pointPosition,
@@ -51,7 +81,7 @@ __global__ void ComputePoint(
 	{
 		const VolumeApproximation::Vector3F point = points[i];
 		hitArray[i] =
-		    IsPointInside(points[i], outsidePoint, triangles, trianglesSize);
+		    IsPointInside(point, outsidePoint, triangles, trianglesSize);
 	}
 }
 
@@ -63,10 +93,9 @@ void Check(const T result,
 {
 	if (result)
 	{
-		throw std::runtime_error(fmt::format(
-		    "CUDA error at {}:{} code={}({}) \"{}\"", file, line,
-		    static_cast<std::underlying_type_t<decltype(result)>>(result),
-		    cudaGetErrorName(result), func));
+		throw std::runtime_error(
+		    fmt::format("CUDA error at {}:{} code={}({}) \"{}\"", file, line,
+		                EnumValue(result), cudaGetErrorName(result), func));
 	}
 }
 #define CHECK_CUDA_ERRORS(val) Check((val), #val, __FILE__, __LINE__)

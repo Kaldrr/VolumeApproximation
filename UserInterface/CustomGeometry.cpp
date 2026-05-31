@@ -11,8 +11,6 @@
 
 #include <QVector3D>
 
-#include <ranges>
-
 namespace
 {
 constexpr std::uint32_t ImportFlags =
