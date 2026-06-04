@@ -25,6 +25,8 @@ public:
 	CustomGeometry& operator=(CustomGeometry&&) noexcept = delete;
 
 private:
-	void SetupVertexData(const aiMesh& mesh);
-	void SetupIndexData(const aiMesh& mesh);
+	void ConfigureAttributes();
+	[[nodiscard]] static QByteArray BuildVertexData(const aiMesh& mesh);
+	[[nodiscard]] static QByteArray BuildIndexData(const aiMesh& mesh,
+	                                               std::uint32_t vertexOffset);
 };

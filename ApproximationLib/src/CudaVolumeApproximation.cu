@@ -41,7 +41,7 @@ template <typename T>
 #else
 template <typename T>
     requires std::is_enum_v<T>
-[[nodiscard]] constexpr std::string_view EnumValue(const T val) noexcept
+[[nodiscard]] constexpr auto EnumValue(const T val) noexcept
 {
 	return static_cast<std::underlying_type_t<T>>(val);
 }
