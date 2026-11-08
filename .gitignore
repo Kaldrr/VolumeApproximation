@@ -1,4 +1,5 @@
-
+build/*
+.idea/*
 # Created by https://www.toptal.com/developers/gitignore/api/qt,qtcreator,windows,visualstudio,ninja,cmake,c++,linux
 # Edit at https://www.toptal.com/developers/gitignore?templates=qt,qtcreator,windows,visualstudio,ninja,cmake,c++,linux
 

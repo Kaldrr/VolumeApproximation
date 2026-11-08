@@ -21,12 +21,12 @@ constexpr std::uint32_t ImportFlags =
 } // namespace
 
 CustomGeometry::CustomGeometry(const std::filesystem::path& modelPath)
-    : CustomGeometry{ nullptr, modelPath }
+    : CustomGeometry{ modelPath, nullptr }
 {
 }
 
-CustomGeometry::CustomGeometry(QQuick3DObject* const parent,
-                               const std::filesystem::path& modelPath)
+CustomGeometry::CustomGeometry(const std::filesystem::path& modelPath,
+                               QQuick3DObject* const parent)
     : QQuick3DGeometry{ parent }
 {
 	if (!std::filesystem::exists(modelPath))
@@ -82,7 +82,8 @@ void CustomGeometry::ConfigureAttributes()
 	constexpr std::size_t VertexSize{ Constants::ElementsPerFace * 2 +
 		                              TexCoordsSize };
 	constexpr std::size_t PositionOffset{ 0 };
-	constexpr std::size_t NormalOffset{ Constants::ElementsPerFace * sizeof(float) };
+	constexpr std::size_t NormalOffset{ Constants::ElementsPerFace *
+		                                sizeof(float) };
 	constexpr std::size_t TexCoordOffset{ 2 * Constants::ElementsPerFace *
 		                                  sizeof(float) };
 
@@ -115,7 +116,8 @@ QByteArray CustomGeometry::BuildVertexData(const aiMesh& mesh)
 		// 8 floats per vertex
 		const std::array<aiVector3D, 3> buffer{ vertices[idx], normals[idx],
 			                                    texCoords[idx] };
-		const auto offset{ static_cast<qsizetype>(idx * VertexSize * sizeof(float)) };
+		const auto offset{ static_cast<qsizetype>(idx * VertexSize *
+			                                      sizeof(float)) };
 		std::memcpy(&vertexData[offset], buffer.data(), sizeof(float) * VertexSize);
 	}
 	assert(vertexData.size() == totalSize);

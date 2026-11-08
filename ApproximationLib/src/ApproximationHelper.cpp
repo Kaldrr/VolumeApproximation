@@ -11,10 +11,15 @@ namespace VolumeApproximation
 std::unique_ptr<IVolumeApproximation> CreateDefaultStrategy()
 {
 #ifdef CUDA_ENABLED
-	return CreateApproximationStrategy(ApproximationExecutor::Cuda);
-#else
-	return std::make_unique<Impl::CpuParallelVolumeApproximation>();
+	// CUDA may be compiled in but unusable at runtime (no GPU or driver)
+	if (std::unique_ptr<IVolumeApproximation> cuda =
+	        CreateApproximationStrategy(ApproximationExecutor::Cuda);
+	    cuda->IsAvailable())
+	{
+		return cuda;
+	}
 #endif
+	return std::make_unique<Impl::CpuParallelVolumeApproximation>();
 }
 
 std::unique_ptr<IVolumeApproximation> CreateApproximationStrategy(

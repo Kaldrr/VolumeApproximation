@@ -1,5 +1,6 @@
 #pragma once
 
+#include <ApproximationLib/ApproximationHelper.hpp>
 #include <ApproximationLib/ICpuVolumeApproximation.hpp>
 #include <PointsInstancing.hpp>
 
@@ -7,6 +8,8 @@
 #include <QRunnable>
 #include <QQuick3DGeometry>
 #include <QVector3D>
+
+#include <vector>
 
 // Qt functions/signals/slots shared with QML need to have special naming convention
 // NOLINTBEGIN(readability-identifier-naming)
@@ -31,10 +34,8 @@ public:
 	SceneController& operator=(const SceneController&)     = delete;
 	SceneController& operator=(SceneController&&) noexcept = delete;
 
-	[[nodiscard]] const QStringList& availableComputeEngines() const noexcept
-	{
-		return m_AvailableComputeEngines;
-	}
+	// Used only through QML
+	[[nodiscard]] QStringList availableComputeEngines() const;
 
 	// Used only through QML
 	[[nodiscard]] QQuick3DGeometry* mainModel() const noexcept
@@ -69,7 +70,7 @@ private slots:
 	        result);
 
 private:
-	QStringList m_AvailableComputeEngines;
+	std::vector<VolumeApproximation::ExecutorNamePair> m_AvailableEngines;
 
 	// Geometry and VolumeApproximator can change, even when computation is ongoing
 	// shared_ptr is made for exactly such scenarios
@@ -90,11 +91,19 @@ public:
 	ComputeRunnable(const std::size_t pointsCount,
 	                std::shared_ptr<const QQuick3DGeometry> geometry,
 	                std::shared_ptr<VolumeApproximation::IVolumeApproximation>
-	                    executor) noexcept
+	                    executor)
 	    : m_PointsCount{ pointsCount }
 	    , m_Geometry{ std::move(geometry) }
 	    , m_Executor{ std::move(executor) }
 	{
+		if (m_Geometry == nullptr)
+		{
+			throw std::invalid_argument{ "Geometry cannot be null." };
+		}
+		if (m_Executor == nullptr)
+		{
+			throw std::invalid_argument{ "Volume approximation executor cannot be null." };
+		}
 	}
 
 	void run() override;

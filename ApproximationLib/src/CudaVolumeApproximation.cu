@@ -13,7 +13,7 @@
 #include <memory>
 #include <utility>
 
-#include <fmt/core.h>
+#include <fmt/format.h>
 
 #if __has_cpp_attribute(cpp_impl_reflection)
 #if __cpp_impl_reflection >= 202506L
@@ -58,7 +58,7 @@ __device__ bool IsPointInside(
 	std::size_t trianglesPassed = 0;
 
 	for (std::size_t i{}; i < trianglesSize; ++i)
-	{
+	{	
 		const VolumeApproximation::Triangle& triangle = triangles[i];
 		if (VolumeApproximation::RayIntersection(origin, rayVector, triangle))
 		{

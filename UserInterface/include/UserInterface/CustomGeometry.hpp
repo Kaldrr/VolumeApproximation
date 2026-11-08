@@ -16,7 +16,7 @@ class CustomGeometry : public QQuick3DGeometry
 
 public:
 	explicit CustomGeometry(const std::filesystem::path& modelPath);
-	CustomGeometry(QQuick3DObject* parent, const std::filesystem::path& modelPath);
+	CustomGeometry(const std::filesystem::path& modelPath, QQuick3DObject* parent);
 	~CustomGeometry() override = default;
 
 	CustomGeometry(const CustomGeometry&)                = delete;

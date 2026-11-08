@@ -24,19 +24,41 @@ SceneController::SceneController(QObject* const parent)
 {
 	constexpr std::size_t EnginesCount = VolumeApproximation::ExecutorNames.size();
 
-	m_AvailableComputeEngines.reserve(EnginesCount);
-	for (const std::string_view engineName :
-	     VolumeApproximation::ExecutorNames | std::views::values)
+	m_AvailableEngines.reserve(EnginesCount);
+	// Offer only the engines usable on this machine (e.g. CUDA may be compiled
+	// in, but there may be no GPU/driver at runtime). ExecutorNames is ordered by
+	// preference, so the first available engine becomes the default.
+	for (const auto& [executor, engineName] : VolumeApproximation::ExecutorNames)
 	{
-		m_AvailableComputeEngines.emplace_back(QString::fromUtf8(engineName));
+		std::unique_ptr<VolumeApproximation::IVolumeApproximation> strategy =
+		    VolumeApproximation::CreateApproximationStrategy(executor);
+		if (!strategy->IsAvailable())
+		{
+			fmt::println(stderr, "Compute engine '{}' is not available, skipping",
+			             engineName);
+			continue;
+		}
+		if (m_VolumeApproximation == nullptr)
+		{
+			m_VolumeApproximation = std::move(strategy);
+		}
+		m_AvailableEngines.emplace_back(executor, engineName);
 	}
-	std::ranges::sort(m_AvailableComputeEngines);
-
-	m_VolumeApproximation = VolumeApproximation::CreateApproximationStrategy(
-	    VolumeApproximation::ExecutorNames.front().first);
 
 	connect(this, &SceneController::mainModelChanged, m_InstancingModel.get(),
 	        &PointsInstancing::ClearPoints);
+}
+
+QStringList SceneController::availableComputeEngines() const
+{
+	QStringList names;
+	names.reserve(static_cast<qsizetype>(m_AvailableEngines.size()));
+	for (const std::string_view engineName :
+	     m_AvailableEngines | std::views::values)
+	{
+		names.emplace_back(QString::fromUtf8(engineName));
+	}
+	return names;
 }
 
 void SceneController::onLoadMeshButtonPress(const QUrl& filePath)
@@ -74,8 +96,7 @@ void SceneController::onCalculateButtonPress(const QString& pointsCountInput)
 
 void SceneController::onComputeEngineChanged(const int index)
 {
-	if (index < 0 ||
-	    std::cmp_greater_equal(index, VolumeApproximation::ExecutorNames.size()))
+	if (index < 0 || std::cmp_greater_equal(index, m_AvailableEngines.size()))
 	{
 		fmt::println(stderr, "Invalid index for compute engine: {}", index);
 		return;
@@ -83,7 +104,7 @@ void SceneController::onComputeEngineChanged(const int index)
 	const auto idx{ static_cast<std::size_t>(index) };
 
 	const VolumeApproximation::ApproximationExecutor chosenExecutor =
-	    VolumeApproximation::ExecutorNames.at(idx).first;
+	    m_AvailableEngines.at(idx).first;
 	m_VolumeApproximation =
 	    VolumeApproximation::CreateApproximationStrategy(chosenExecutor);
 }
