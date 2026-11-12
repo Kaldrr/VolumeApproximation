@@ -2,9 +2,19 @@
 #include <UserInterface/GeometryConstants.hpp>
 #include <UserInterface/GeometryHelpers.hpp>
 
+#include <cassert>
+#include <concepts>
+#include <cstdint>
+#include <cstring>
+#include <optional>
 #include <random>
+#include <span>
+#include <stdexcept>
+#include <type_traits>
+#include <utility>
+#include <vector>
 
-#include <fmt/base.h>
+#include <fmt/format.h>
 
 namespace
 {
@@ -14,7 +24,7 @@ struct Attributes
 	QQuick3DGeometry::Attribute Index;
 };
 
-[[nodiscard]] Attributes GetAttributes(const QQuick3DGeometry& geometry) noexcept
+[[nodiscard]] Attributes GetAttributes(const QQuick3DGeometry& geometry)
 {
 	std::optional<QQuick3DGeometry::Attribute> positionAttribute{};
 	std::optional<QQuick3DGeometry::Attribute> indexAttribute{};
@@ -37,95 +47,164 @@ struct Attributes
 		if (positionAttribute.has_value() && indexAttribute.has_value())
 		{
 			return Attributes{ .Position = *positionAttribute,
-				               .Index    = *indexAttribute };
+			                   .Index    = *indexAttribute };
 		}
 	}
-	fmt::println(stderr, "Failed to extract attributes from geometry, ");
-	fmt::println(stderr, "HasPosition={}, HasIndex={}",
-	             positionAttribute.has_value(), indexAttribute.has_value());
-	// Every model should have at least position and index attributes.
-	// ...right?
-	std::unreachable();
+	throw std::runtime_error{ fmt::format(
+		"Failed to extract attributes from geometry, HasPosition={}, HasIndex={}",
+		positionAttribute.has_value(), indexAttribute.has_value()) };
 }
 
-template <typename InDataT, typename OutDataT>
-[[nodiscard]] std::vector<OutDataT> ExtractDataHelper(const QByteArray& data,
-                                                      const std::size_t offset,
-                                                      const std::size_t stride)
-{
-	const std::span<const std::byte> dataView{ std::as_bytes(
-		std::span{ data.data(), static_cast<std::size_t>(data.size()) }) };
-	const std::size_t elementCount{ dataView.size() / stride };
+// Position attribute is [X, Y, Z]
+constexpr std::size_t PositionComponents{ 3 };
 
-	// We are always using triangles
-	// So position will be stored as: [X, Y, Z, NX, NY, NZ, U, V]
-	// Should always be float's
-	// And indices as: [X, Y, Z]
-	// But they can change, u16, u32, etc.
-	std::vector<OutDataT> extractedData{};
-	using ItrDiff = typename std::vector<OutDataT>::difference_type;
-	extractedData.resize(elementCount * Constants::ElementsPerFace);
-	for (std::size_t i = 0; i < elementCount; ++i)
+using ComponentType = QQuick3DGeometry::Attribute::ComponentType;
+
+/// Calls `visitor.template operator()<T>()`, where T is the C++ type stored
+/// for `type` (e.g. U32Type -> std::uint32_t). Turns the runtime component
+/// type into a compile-time one, in a single place.
+template <typename Visitor>
+[[nodiscard]] decltype(auto) VisitComponentType(const ComponentType type,
+                                                Visitor&& visitor)
+{
+	switch (type)
 	{
-		// We MIGHT need to do a data conversion
-		// Indices stored as u32, but we want u64 out etc.
-		// memcpy would do the wrong thing in such case
-		std::copy_n(
-		    // NOLINTNEXTLINE(cppcoreguidelines-pro-type-reinterpret-cast)
-		    reinterpret_cast<const InDataT*>(&dataView[(i * stride) + offset]),
-		    Constants::ElementsPerFace,
-		    std::next(extractedData.begin(),
-		              static_cast<ItrDiff>(i * Constants::ElementsPerFace)));
+		case ComponentType::U16Type:
+			return std::forward<Visitor>(visitor)
+			    .template operator()<std::uint16_t>();
+		case ComponentType::U32Type:
+			return std::forward<Visitor>(visitor)
+			    .template operator()<std::uint32_t>();
+		case ComponentType::I32Type:
+			return std::forward<Visitor>(visitor)
+			    .template operator()<std::int32_t>();
+		case ComponentType::F32Type:
+			return std::forward<Visitor>(visitor).template operator()<float>();
+	}
+	throw std::runtime_error{ fmt::format("Unknown geometry component type: {}",
+	                                      std::to_underlying(type)) };
+}
+
+[[nodiscard]] std::span<const std::byte> AsBytes(const QByteArray& data) noexcept
+{
+	return std::as_bytes(
+	    std::span{ data.constData(), static_cast<std::size_t>(data.size()) });
+}
+
+/// Converts one component, rejecting negative values that would wrap when
+/// stored in an unsigned type.
+template <typename InT, typename OutT>
+[[nodiscard]] OutT ConvertComponent(const InT value)
+{
+	if constexpr (std::is_signed_v<InT> && std::is_unsigned_v<OutT>)
+	{
+		if (value < 0)
+		{
+			throw std::runtime_error{ fmt::format(
+				"Negative value {} can't be stored as unsigned", value) };
+		}
+	}
+	return static_cast<OutT>(value);
+}
+
+/// Reads `componentCount` consecutive InT values from every element of an
+/// interleaved buffer (element i starts at i * stride + offset) and converts
+/// them to OutT, returning a flat array of components.
+template <typename InT, typename OutT>
+    requires std::is_arithmetic_v<InT> && std::is_arithmetic_v<OutT>
+[[nodiscard]] std::vector<OutT> ReadComponents(
+    const std::span<const std::byte> bytes,
+    const std::size_t offset,
+    const std::size_t stride,
+    const std::size_t componentCount)
+{
+	const std::size_t elementSize{ componentCount * sizeof(InT) };
+	if (stride == 0 || offset + elementSize > stride)
+	{
+		throw std::runtime_error{ fmt::format(
+			"Attribute (offset {}, {} bytes) doesn't fit in stride {}", offset,
+			elementSize, stride) };
+	}
+	// The last element may not be padded to a full stride
+	const std::size_t elementCount{
+		bytes.size() < offset + elementSize
+		    ? 0
+			: ((bytes.size() - offset - elementSize) / stride) + 1
+	};
+
+	std::vector<OutT> components{};
+	if constexpr (std::is_same_v<InT, OutT>)
+	{
+		// Tightly packed and no conversion needed: copy the whole block at once
+		if (stride == elementSize)
+		{
+			components.resize(elementCount * componentCount);
+			std::memcpy(components.data(), bytes.subspan(offset).data(),
+			            components.size() * sizeof(OutT));
+			return components;
+		}
 	}
 
-	return extractedData;
+	components.reserve(elementCount * componentCount);
+	for (std::size_t element{ 0 }; element < elementCount; ++element)
+	{
+		const std::span<const std::byte> elementBytes{ bytes.subspan(
+			(element * stride) + offset, elementSize) };
+		for (std::size_t component{ 0 }; component < componentCount; ++component)
+		{
+			// memcpy: buffer data isn't guaranteed to be aligned for InT
+			InT value{};
+			std::memcpy(&value,
+			            elementBytes.subspan(component * sizeof(InT)).data(),
+			            sizeof(InT));
+			components.push_back(ConvertComponent<InT, OutT>(value));
+		}
+	}
+	return components;
 }
 
-template <typename OutDataT>
-[[nodiscard]] std::vector<OutDataT> ExtractData(
-    const QByteArray& data,
+/// Flat components of an interleaved vertex attribute (positions: X0, Y0, Z0,
+/// X1...)
+template <typename OutT>
+[[nodiscard]] std::vector<OutT> ExtractVertexAttribute(
+    const QByteArray& vertexData,
     const QQuick3DGeometry::Attribute& attribute,
-    const std::size_t stride)
+    const std::size_t stride,
+    const std::size_t componentCount)
 {
-	const auto offset{ static_cast<std::size_t>(attribute.offset) };
-	switch (attribute.componentType)
-	{
-		case QQuick3DGeometry::Attribute::ComponentType::U16Type:
-			return ExtractDataHelper<std::uint16_t, OutDataT>(data, offset, stride);
-		case QQuick3DGeometry::Attribute::ComponentType::U32Type:
-			return ExtractDataHelper<std::uint32_t, OutDataT>(data, offset, stride);
-		case QQuick3DGeometry::Attribute::ComponentType::I32Type:
-			return ExtractDataHelper<std::int32_t, OutDataT>(data, offset, stride);
-		case QQuick3DGeometry::Attribute::ComponentType::F32Type:
-			return ExtractDataHelper<float, OutDataT>(data, offset, stride);
-	}
-	fmt::println(stderr, "Unknown component type: {}",
-	             static_cast<int>(attribute.componentType));
-	std::unreachable();
+	return VisitComponentType(attribute.componentType, [&]<typename InT>() {
+		return ReadComponents<InT, OutT>(AsBytes(vertexData),
+		                                 static_cast<std::size_t>(attribute.offset),
+		                                 stride, componentCount);
+	});
 }
 
-template <typename OutDataT>
-[[nodiscard]] std::vector<OutDataT> ExtractIndexData(
-    const QByteArray& data,
+/// Index buffer is tightly packed, one index per element
+template <std::integral OutT>
+[[nodiscard]] std::vector<OutT> ExtractIndices(
+    const QByteArray& indexData,
     const QQuick3DGeometry::Attribute& attribute)
 {
-	std::size_t stride{};
-	switch (attribute.componentType)
-	{
-		case QQuick3DGeometry::Attribute::ComponentType::U16Type:
-			stride = sizeof(std::uint16_t) * Constants::ElementsPerFace;
-			break;
-		case QQuick3DGeometry::Attribute::ComponentType::U32Type:
-			stride = sizeof(std::uint32_t) * Constants::ElementsPerFace;
-			break;
-		case QQuick3DGeometry::Attribute::ComponentType::I32Type:
-			stride = sizeof(std::int32_t) * Constants::ElementsPerFace;
-			break;
-		case QQuick3DGeometry::Attribute::ComponentType::F32Type:
-			stride = sizeof(float) * Constants::ElementsPerFace;
-			break;
-	}
-	return ExtractData<OutDataT>(data, attribute, stride);
+	return VisitComponentType(attribute.componentType, [&]<typename InT>() {
+		if constexpr (std::floating_point<InT>)
+		{
+			throw std::runtime_error{ "Index buffer must use an integer type" };
+			return std::vector<OutT>{};
+		}
+		else
+		{
+			const std::span<const std::byte> bytes{ AsBytes(indexData) };
+			const auto offset{ static_cast<std::size_t>(attribute.offset) };
+			if (offset > bytes.size())
+			{
+				throw std::runtime_error{ fmt::format(
+					"Index offset {} past end of {}-byte buffer", offset,
+					bytes.size()) };
+			}
+			return ReadComponents<InT, OutT>(bytes.subspan(offset), 0, sizeof(InT),
+			                                 1);
+		}
+	});
 }
 } // namespace
 
@@ -159,29 +238,38 @@ std::vector<VolumeApproximation::Triangle> ParseTrianglesFromGeometry(
 	const auto stride{ static_cast<std::size_t>(geometry.stride()) };
 	const Attributes attributes{ GetAttributes(geometry) };
 
-	const std::vector<float> vertexData{ ExtractData<float>(
-		geometry.vertexData(), attributes.Position, stride) };
+	const std::vector<float> vertexData{ ExtractVertexAttribute<float>(
+		geometry.vertexData(), attributes.Position, stride, PositionComponents) };
 
-	const std::vector<std::uint32_t> indexData{ ExtractIndexData<std::uint32_t>(
+	const std::vector<std::uint32_t> indexData{ ExtractIndices<std::uint32_t>(
 		geometry.indexData(), attributes.Index) };
 
-	std::vector<VolumeApproximation::Triangle> triangles{};
-	triangles.reserve(vertexData.size() / Constants::ElementsPerFace);
+	if (indexData.size() % Constants::ElementsPerFace != 0)
+	{
+		throw std::runtime_error{ fmt::format(
+			"Index count {} isn't a multiple of {} (triangles only)",
+			indexData.size(), Constants::ElementsPerFace) };
+	}
+	const std::size_t vertexCount{ vertexData.size() / PositionComponents };
+	const auto vertexAt{ [&](const std::uint32_t index) {
+		if (index >= vertexCount)
+		{
+			throw std::runtime_error{ fmt::format(
+				"Vertex index {} out of range ({} vertices)", index, vertexCount) };
+		}
+		const std::size_t base{ index * PositionComponents };
+		return VolumeApproximation::Vector3F{ vertexData[base],
+		                                      vertexData[base + 1ZU],
+		                                      vertexData[base + 2ZU] };
+	} };
 
+	std::vector<VolumeApproximation::Triangle> triangles{};
+	triangles.reserve(indexData.size() / Constants::ElementsPerFace);
 	for (std::size_t i{ 0 }; i < indexData.size(); i += Constants::ElementsPerFace)
 	{
-		const std::uint64_t xIdx{ indexData[i] * Constants::ElementsPerFace };
-		const std::uint64_t yIdx{ indexData[i + 1] * Constants::ElementsPerFace };
-		const std::uint64_t zIdx{ indexData[i + 2] * Constants::ElementsPerFace };
-		const VolumeApproximation::Triangle triangle{
-			VolumeApproximation::Vector3F{ vertexData[xIdx], vertexData[xIdx + 1ZU],
-			                               vertexData[xIdx + 2ZU] },
-			VolumeApproximation::Vector3F{ vertexData[yIdx], vertexData[yIdx + 1ZU],
-			                               vertexData[yIdx + 2ZU] },
-			VolumeApproximation::Vector3F{ vertexData[zIdx], vertexData[zIdx + 1ZU],
-			                               vertexData[zIdx + 2ZU] }
-		};
-		triangles.emplace_back(triangle);
+		triangles.push_back(VolumeApproximation::Triangle{
+		    vertexAt(indexData[i]), vertexAt(indexData[i + 1]),
+		    vertexAt(indexData[i + 2]) });
 	}
 	assert(triangles.size() == indexData.size() / Constants::ElementsPerFace);
 
