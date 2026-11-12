@@ -118,9 +118,24 @@ macros if the backend is optional. `SceneController` keeps the available engines
 built from it. The QML combo-box index points into that vector, so reorder
 the vector itself, never only the displayed names.
 
+## Claude Code hooks (`.claude/settings.json`)
+
+- `.claude/hooks/format.sh` (PostToolUse on Edit/Write) runs `clang-format -i` on touched
+  `.cpp/.hpp/.h/.cu/.cuh` files, skipping `project_options/` and `build*/`.
+- `.claude/hooks/build-check.sh` (Stop) builds the CPU-only config in `build-hook/`
+  (Debug, no sanitizers) when C++/CMake/QML files have uncommitted changes. A broken
+  build blocks finishing and returns the compiler errors. It blocks at most once per stop
+  (`stop_hook_active`).
+
+## Claude Code subagents (`.claude/agents/`)
+
+- `build-matrix` builds and smoke-runs all five configs in `build-matrix/<config>/` and reports a
+  table. Use it to verify cross-cutting or CMake changes, instead of running the matrix inline.
+- `reviewer` is a read-only, independent review of a diff against the hard requirements above.
+
 ## Conventions
 
-- Formatting: `.clang-format` (tabs, Allman braces). Run `clang-format -i` on touched files.
+- Formatting: `.clang-format` (tabs, Allman braces). The format hook applies it automatically.
 - Naming (`.clang-tidy`): types, functions and methods `CamelCase`; locals and
   parameters `camelBack`; private/protected members `m_CamelCase`; constants
   `CamelCase`. Qt/QML-exposed members use Qt's `camelBack` naming inside
