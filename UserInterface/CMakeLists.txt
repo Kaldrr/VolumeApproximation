@@ -1,5 +1,5 @@
 find_package(
-  Qt6
+  Qt6 6.9
   COMPONENTS Core Quick Concurrent Quick3D QuickControls2
   REQUIRED)
 find_package(fmt REQUIRED)
@@ -15,7 +15,8 @@ set(HEADER_FILES
         # If we put it in the include/UserInterface directory, it will not be found
         SceneController.hpp PointsInstancing.hpp)
 
-set(SOURCE_FILES main.cpp SceneController.cpp CustomGeometry.cpp GeometryHelpers.cpp PointsInstancing.cpp)
+set(SOURCE_FILES main.cpp SceneController.cpp CustomGeometry.cpp GeometryHelpers.cpp PointsInstancing.cpp
+                 SanitizerDefaults.cpp)
 
 qt_add_executable(VolumeApproximation ${HEADER_FILES} ${SOURCE_FILES})
 
@@ -33,14 +34,12 @@ qt_add_qml_module(
   # ENABLE_TYPE_COMPILER NO_GENERATE_EXTRA_QMLDIRS
 )
 
-# TODO: VolumeApproximation_project_options Can't be set in CUDA right now But
-# if we set it here, WEIRD things happen Like cudaGetDeviceCount returning
-# outOfMemory errors
 target_link_libraries(
   VolumeApproximation
   PRIVATE ApproximationLib
           VolumeApproximation_project_warnings
           VolumeApproximation_project_options
+          VolumeApproximation_sanitizers
           assimp::assimp
           fmt::fmt
           Qt6::Core
@@ -48,7 +47,8 @@ target_link_libraries(
           Qt6::Quick3D
           Qt6::Quick
           Qt6::QuickControls2)
-target_include_directories(VolumeApproximation PUBLIC include)
+target_include_directories(VolumeApproximation PRIVATE include
+                                                       ${CMAKE_CURRENT_SOURCE_DIR})
 
 if(WIN32)
   add_custom_command(

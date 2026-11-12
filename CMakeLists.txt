@@ -3,56 +3,44 @@ cmake_minimum_required(VERSION 3.30)
 project(VolumeApproximation LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 23)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_CXX_EXTENSIONS OFF)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 if(WIN32)
-  set(CMAKE_INCLUDE_CURRENT_DIR ON)
   set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
   set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR})
 endif()
 
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+option(CUDA_ENABLED "Build the optional CUDA backend" OFF)
+option(FEATURE_CHECKS "Run static analysis (clang-tidy with Clang)" ON)
 
+if(NOT EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/project_options/CMakeLists.txt")
+  message(FATAL_ERROR "project_options submodule is missing. Run: git submodule update --init")
+endif()
 add_subdirectory(project_options)
 
-option(FEATURE_CHECKS "Enable more checks + sanitizers" ON)
-# Enable sanitizers and static analyzers
-if(FEATURE_CHECKS)
-  if(CMAKE_CXX_COMPILER_ID STREQUAL "Clang")
-    # GCC sets some module specific flags which upset clang-tidy
-    # -fdeps-format=p1689r5, -fmodule-mapper and -fmodule-ts
-    set(ENABLE_CLANG_TIDY "ENABLE_CLANG_TIDY")
-  endif()
-  #
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
+include(Sanitizers)
 
-  # set(ENABLE_SANITIZER_ADDRESS "ENABLE_SANITIZER_ADDRESS")
-  # set(ENABLE_SANITIZER_UNDEFINED "ENABLE_SANITIZER_UNDEFINED")
-  # set(ENABLE_SANITIZER_MEMORY "ENABLE_SANITIZER_MEMORY")
+set(ENABLE_CLANG_TIDY "")
+if(FEATURE_CHECKS AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  # GCC sets some module specific flags which upset clang-tidy
+  # (-fdeps-format=p1689r5, -fmodule-mapper and -fmodule-ts), so only use it with Clang
+  set(ENABLE_CLANG_TIDY ENABLE_CLANG_TIDY)
 endif()
 
-# Initialize project_options variable related to this project This overwrites
-# `project_options` and sets `project_warnings` uncomment to enable the options.
-# Some of them accept one or more inputs:
 project_options(
   PREFIX
   "VolumeApproximation"
-  ${ENABLE_CPPCHECK}
-  ${CPPCHECK_OPTIONS}
   ${ENABLE_CLANG_TIDY}
-  ENABLE_VS_ANALYSIS
   ENABLE_INTERPROCEDURAL_OPTIMIZATION
   ENABLE_NATIVE_OPTIMIZATION
-  ${ENABLE_SANITIZER_ADDRESS}
-  ${ENABLE_SANITIZER_UNDEFINED}
-  # ${ENABLE_SANITIZER_THREAD}
-  ${ENABLE_SANITIZER_MEMORY}
-  # ENABLE_SANITIZER_POINTER_COMPARE ENABLE_SANITIZER_POINTER_SUBTRACT
-  # ENABLE_CONTROL_FLOW_PROTECTION ENABLE_STACK_PROTECTION
-  # ENABLE_OVERFLOW_PROTECTION ENABLE_ELF_PROTECTION
-  # ENABLE_RUNTIME_SYMBOLS_RESOLUTION ENABLE_COMPILE_COMMANDS_SYMLINK Would be
-  # nice to have, but GCC has some weird Qt-generated-code-issues in release
-  # build right now... WARNINGS_AS_ERRORS enable later
-  # ENABLE_INCLUDE_WHAT_YOU_USE
+  # WARNINGS_AS_ERRORS: enable once GCC stops warning about Qt-generated code
 )
+
+# Creates VolumeApproximation_sanitizers (Debug-only, see DEBUG_SANITIZERS)
+volume_approximation_sanitizers(VolumeApproximation)
 
 add_subdirectory(ApproximationLib)
 add_subdirectory(UserInterface)

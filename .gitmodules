@@ -1,0 +1,3 @@
+[submodule "project_options"]
+	path = project_options
+	url = https://github.com/aminya/project_options.git

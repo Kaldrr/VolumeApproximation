@@ -15,13 +15,14 @@ The Qt Quick 3D UI shows the mesh, the classified points and the computed volume
 - **CUDA** (optional, CUDA 13, C++20 for device code, default arch `sm_89`)
 - Other dependencies: `fmt`, `assimp` (mesh loading), `tbb` (backs
   `std::execution::par_unseq`)
-- [`aminya/project_options`](https://github.com/aminya/project_options) v0.41.0
-  supplies warnings, IPO, clang-tidy and the `target_link_cuda` macro. It is
-  **not a submodule**. It has to be cloned into `./project_options/` before configuring:
-  `git clone --branch v0.41.0 https://github.com/aminya/project_options.git`
+- [`aminya/project_options`](https://github.com/aminya/project_options) v0.44.0
+  is a **git submodule** in `./project_options/` (`git submodule update --init`).
+  It supplies warnings, IPO, `-march=native`, clang-tidy and the `target_link_cuda` macro.
+  Sanitizers are **not** taken from project_options, see `cmake/Sanitizers.cmake`.
 
 ## Layout
 
+- `cmake/` holds project CMake modules (`Sanitizers.cmake`).
 - `ApproximationLib/` holds the shared library with all the computation and no Qt dependency.
   - `IVolumeApproximation.hpp` is the backend interface: `IsAvailable()` + `ComputeVolume()`.
   - `ApproximationHelper.{hpp,cpp}` holds the backend list (`ApproximationExecutor` enum,
@@ -57,16 +58,28 @@ cmake -S . -B build-cuda -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCUDA_ENABL
 cmake --build build-cuda
 ```
 
-- `CUDA_ENABLED` (CMake cache option, default `OFF`) adds the `.cu` source,
+- `CUDA_ENABLED` (root `option()`, default `OFF`) adds the `.cu` source,
   calls `target_link_cuda` and defines `CUDA_ENABLED` **publicly** on
-  `ApproximationLib`, so the UI sees the same value.
+  `ApproximationLib`, so the UI sees the same value. The GPU arch defaults to
+  `89` and can be overridden with `-DCMAKE_CUDA_ARCHITECTURES=<arch|native>`.
+- **Debug builds use sanitizers.** `DEBUG_SANITIZERS` defaults to
+  `address;undefined` and is only applied to the `Debug` config.
+  ASan and TSan can't be combined in one binary, so use a separate build dir for TSan:
+  `-DCMAKE_BUILD_TYPE=Debug -DDEBUG_SANITIZERS="thread;undefined"`. Set it to `""` to
+  disable sanitizers. The flags come from the `VolumeApproximation_sanitizers`
+  INTERFACE target, which forwards them to nvcc's host compiler via `-Xcompiler`.
+  Every target links it PRIVATE.
+- Project flag targets (`VolumeApproximation_project_options` / `_warnings` /
+  `_sanitizers`) are linked PRIVATE. Each target links them itself. Don't make them PUBLIC.
 - `FEATURE_CHECKS` (default `ON`) runs clang-tidy when the compiler is Clang.
   Pass `-DFEATURE_CHECKS=OFF` for faster iteration.
 - There are no automated tests yet. To verify a change, build **both**
   configurations, then run the app, load a mesh and calculate on each listed engine.
-- If CUDA builds return odd errors (e.g. `cudaGetDeviceCount` reporting
-  out-of-memory), the comments in both `CMakeLists.txt` files point at linking
-  `VolumeApproximation_project_options` as the usual cause.
+- `UserInterface/SanitizerDefaults.cpp` bakes in sanitizer runtime defaults:
+  - ASan + CUDA needs `protect_shadow_gap=0`, otherwise `cudaGetDeviceCount` fails
+    (out-of-memory / no device) and CUDA is reported unavailable.
+  - TSan suppresses races inside uninstrumented Qt (`race:libQt6*`).
+  - `ASAN_OPTIONS` / `TSAN_OPTIONS` env vars still override these.
 
 ## Hard requirements
 
