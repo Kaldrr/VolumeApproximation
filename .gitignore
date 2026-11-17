@@ -95,7 +95,9 @@ ui_*.h
 *.qmlc
 *.jsc
 Makefile*
-*build-*
+# Shadow build directories (build-cpu/, build-hook/, ...). Directories only: the template's
+# `*build-*` also matched files such as .claude/hooks/build-check.sh
+build-*/
 *.qm
 *.prl
 
@@ -657,12 +659,8 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 ### CLion+all Patch ###
-# Ignore everything but code style settings and run configurations
-# that are supposed to be shared within teams.
+# The whole .idea/ folder is personal IDE state. Code style is shared through .clang-format.
 
-.idea/*
-
-!.idea/codeStyles
-!.idea/runConfigurations
+.idea/
 
 # End of https://www.toptal.com/developers/gitignore/api/clion+all
