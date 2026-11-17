@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "volume-approximation": {
+      "type": "stdio",
+      "command": "uv",
+      "args": ["run", "--directory", "tools/mcp-server", "volume-approximation-mcp"]
+    }
+  }
+}

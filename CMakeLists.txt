@@ -44,3 +44,9 @@ volume_approximation_sanitizers(VolumeApproximation)
 
 add_subdirectory(ApproximationLib)
 add_subdirectory(UserInterface)
+
+# BUILD_TESTING option (default ON); tests are skipped with a warning if GoogleTest is missing
+include(CTest)
+if(BUILD_TESTING)
+  add_subdirectory(tests)
+endif()

@@ -28,15 +28,27 @@ VA_SANITIZER_HOOK const char* __asan_default_options()
 {
 	return "protect_shadow_gap=0";
 }
+
+// The NVIDIA driver allocates state in cuInit (first cudaGetDeviceCount) that it
+// never frees, so LeakSanitizer fails every process that touched CUDA at exit.
+// Only the driver is suppressed: leaks in our own code are still reported.
+VA_SANITIZER_HOOK const char* __lsan_default_suppressions()
+{
+	return "leak:libcuda.so\n";
+}
 #endif
 
 #if defined(VA_TSAN)
-// Qt isn't built with TSan, so its internal synchronisation (QThread,
-// QObject::moveToThread, QML engine thread) shows up as false races.
-// Our own code is instrumented and still reported.
+// Qt and oneTBB (behind std::execution::par_unseq) aren't built with TSan, so their
+// internal synchronisation (QThread, QObject::moveToThread, the QML engine thread,
+// TBB's task stealing) shows up as false races.
+// Trade-off: a race whose stack passes through these libraries is hidden too, e.g.
+// inside a parallel-algorithm lambda. Races in other project code are still
+// reported.
 VA_SANITIZER_HOOK const char* __tsan_default_suppressions()
 {
-	return "race:libQt6*\n";
+	return "race:libQt6*\n"
+	       "race:libtbb.so\n";
 }
 #endif
 // NOLINTEND(readability-identifier-naming,bugprone-reserved-identifier,cert-dcl37-c,cert-dcl51-cpp)

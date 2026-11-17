@@ -1,0 +1,70 @@
+{
+  "version": 6,
+  "cmakeMinimumRequired": { "major": 3, "minor": 30, "patch": 0 },
+  "configurePresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_EXPORT_COMPILE_COMMANDS": "ON"
+      }
+    },
+    {
+      "name": "cuda",
+      "hidden": true,
+      "cacheVariables": { "CUDA_ENABLED": "ON" }
+    },
+    {
+      "name": "cpu-debug",
+      "displayName": "CPU Debug (ASan+UBSan)",
+      "inherits": "base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "CUDA_ENABLED": "OFF" }
+    },
+    {
+      "name": "cpu-release",
+      "displayName": "CPU Release",
+      "inherits": "base",
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Release", "CUDA_ENABLED": "OFF" }
+    },
+    {
+      "name": "cuda-debug",
+      "displayName": "CUDA Debug (ASan+UBSan)",
+      "inherits": ["base", "cuda"],
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug" }
+    },
+    {
+      "name": "cuda-tsan",
+      "displayName": "CUDA Debug (TSan+UBSan)",
+      "inherits": ["base", "cuda"],
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "Debug", "DEBUG_SANITIZERS": "thread;undefined" }
+    },
+    {
+      "name": "cuda-relwithdebinfo",
+      "displayName": "CUDA RelWithDebInfo",
+      "inherits": ["base", "cuda"],
+      "cacheVariables": { "CMAKE_BUILD_TYPE": "RelWithDebInfo" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "cpu-debug", "configurePreset": "cpu-debug" },
+    { "name": "cpu-release", "configurePreset": "cpu-release" },
+    { "name": "cuda-debug", "configurePreset": "cuda-debug" },
+    { "name": "cuda-tsan", "configurePreset": "cuda-tsan" },
+    { "name": "cuda-relwithdebinfo", "configurePreset": "cuda-relwithdebinfo" }
+  ],
+  "testPresets": [
+    {
+      "name": "base",
+      "hidden": true,
+      "output": { "outputOnFailure": true },
+      "execution": { "noTestsAction": "error" }
+    },
+    { "name": "cpu-debug", "inherits": "base", "configurePreset": "cpu-debug" },
+    { "name": "cpu-release", "inherits": "base", "configurePreset": "cpu-release" },
+    { "name": "cuda-debug", "inherits": "base", "configurePreset": "cuda-debug" },
+    { "name": "cuda-tsan", "inherits": "base", "configurePreset": "cuda-tsan" },
+    { "name": "cuda-relwithdebinfo", "inherits": "base", "configurePreset": "cuda-relwithdebinfo" }
+  ]
+}

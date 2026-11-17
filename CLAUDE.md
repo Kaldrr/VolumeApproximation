@@ -23,6 +23,7 @@ The Qt Quick 3D UI shows the mesh, the classified points and the computed volume
 ## Layout
 
 - `cmake/` holds project CMake modules (`Sanitizers.cmake`).
+- `tests/` holds the GoogleTest tests for `ApproximationLib`, with mesh and seeded-point helpers in `TestHelpers.hpp`.
 - `ApproximationLib/` holds the shared library with all the computation and no Qt dependency.
   - `IVolumeApproximation.hpp` is the backend interface: `IsAvailable()` + `ComputeVolume()`.
   - `ApproximationHelper.{hpp,cpp}` holds the backend list (`ApproximationExecutor` enum,
@@ -43,19 +44,14 @@ The Qt Quick 3D UI shows the mesh, the classified points and the computed volume
 
 ## Build
 
-CPU-only (the default, and it must always work):
+All supported configurations are defined once, in `CMakePresets.json`. Each builds into
+`build/<preset>/`:
+`cpu-debug`, `cpu-release`, `cuda-debug`, `cuda-tsan`, `cuda-relwithdebinfo`
+(`cmake --list-presets`). The CPU-only presets must always work.
 
 ```bash
-cmake -S . -B build-cpu -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCUDA_ENABLED=OFF
-cmake --build build-cpu
-./build-cpu/UserInterface/VolumeApproximation
-```
-
-With CUDA:
-
-```bash
-cmake -S . -B build-cuda -G Ninja -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCUDA_ENABLED=ON
-cmake --build build-cuda
+cmake --preset cpu-debug && cmake --build --preset cpu-debug && ctest --preset cpu-debug
+./build/cpu-debug/UserInterface/VolumeApproximation
 ```
 
 - `CUDA_ENABLED` (root `option()`, default `OFF`) adds the `.cu` source,
@@ -73,12 +69,23 @@ cmake --build build-cuda
   `_sanitizers`) are linked PRIVATE. Each target links them itself. Don't make them PUBLIC.
 - `FEATURE_CHECKS` (default `ON`) runs clang-tidy when the compiler is Clang.
   Pass `-DFEATURE_CHECKS=OFF` for faster iteration.
-- There are no automated tests yet. To verify a change, build **both**
-  configurations, then run the app, load a mesh and calculate on each listed engine.
-- `UserInterface/SanitizerDefaults.cpp` bakes in sanitizer runtime defaults:
+- **Tests:** GoogleTest in `tests/` (target `ApproximationLibTests`), registered with CTest
+  (`include(CTest)`, `BUILD_TESTING`, default ON; skipped with a warning if GTest is missing).
+  They cover Vector3 math, ray intersection, point classification, CPU backend volumes
+  (cube, tetrahedron) and the factory fallback. `CudaBackendTests.cpp` is compiled only with
+  CUDA and `GTEST_SKIP`s without a usable GPU. Points are seeded, so results are
+  deterministic. Backends report volume ×1e6 (`TestHelpers::VolumeScale`).
+- To verify a change, run `ctest --preset` for a CPU and a CUDA preset. For UI changes, also run
+  the app, load a mesh and calculate on each listed engine.
+- `UserInterface/SanitizerDefaults.cpp` bakes in sanitizer runtime defaults. It is compiled into
+  both the app and `ApproximationLibTests`:
   - ASan + CUDA needs `protect_shadow_gap=0`, otherwise `cudaGetDeviceCount` fails
     (out-of-memory / no device) and CUDA is reported unavailable.
-  - TSan suppresses races inside uninstrumented Qt (`race:libQt6*`).
+  - ASan + CUDA suppresses LeakSanitizer reports from the NVIDIA driver (`leak:libcuda.so`).
+    `cuInit` never frees its state, which would fail every test that touched CUDA at exit.
+  - TSan suppresses races inside uninstrumented Qt and oneTBB (`race:libQt6*`, `race:libtbb.so`).
+    TBB runs `std::execution::par_unseq`. This also hides real races whose stack passes through
+    these libraries, such as inside a parallel-algorithm lambda.
   - `ASAN_OPTIONS` / `TSAN_OPTIONS` env vars still override these.
 
 ## Hard requirements
@@ -129,9 +136,23 @@ the vector itself, never only the displayed names.
 
 ## Claude Code subagents (`.claude/agents/`)
 
-- `build-matrix` builds and smoke-runs all five configs in `build-matrix/<config>/` and reports a
+- `build-matrix` builds, tests (ctest) and smoke-runs every preset in `build/<preset>/` and reports a
   table. Use it to verify cross-cutting or CMake changes, instead of running the matrix inline.
 - `reviewer` is a read-only, independent review of a diff against the hard requirements above.
+
+## MCP server (`tools/mcp-server/`, registered in `.mcp.json`)
+
+- `volume-approximation` (Python, official `mcp` 2.x SDK, run with `uv`) exposes the presets as tools:
+  - `list_configurations`, `configure`, `build`, `get_diagnostics`
+  - `list_tests`, `run_tests` (builds first)
+  - `smoke_run`, `environment`
+  
+  Full logs are the `build://{preset}/build-log|test-log|smoke-log` resources.
+- When it's connected, prefer `run_tests` / `build` over raw cmake/ctest shell commands: they return
+  parsed diagnostics and test failures instead of long logs.
+- It only accepts presets from `CMakePresets.json` (no free-form commands). Adding a configuration
+  means adding a preset, nothing else.
+- Its own tests: `cd tools/mcp-server && uv run pytest`. The end-to-end run over stdio is `uv run python scripts/e2e.py [preset]`.
 
 ## Conventions
 

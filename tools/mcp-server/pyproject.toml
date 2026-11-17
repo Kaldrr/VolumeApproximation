@@ -1,0 +1,29 @@
+[project]
+name = "volume-approximation-mcp"
+version = "0.1.0"
+description = "MCP server exposing VolumeApproximation build, test and smoke-run results to Claude Code"
+authors = [
+    { name = "Kaldrr", email = "tomekmichalak11@gmail.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "mcp>=1.10",
+]
+
+[project.scripts]
+volume-approximation-mcp = "volume_approximation_mcp:main"
+
+[build-system]
+requires = ["uv_build>=0.13.8,<0.14.0"]
+build-backend = "uv_build"
+
+[dependency-groups]
+dev = [
+    "pytest>=9.2.0",
+    "pytest-asyncio>=1.5.0",
+]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
